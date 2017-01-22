@@ -1,0 +1,9 @@
+## Interface: 70100
+## Title: Raid Cooldown Tracker
+## Author: Snakybo
+## Version 1.0
+## Notes: Cooldown tracker for raid groups
+
+init.lua
+spell_list.lua
+core.lua
