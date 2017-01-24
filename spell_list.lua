@@ -58,7 +58,7 @@ RCT.spellDB = {
 				level		= 80,
 				modifiers	= {
 					-- Sanctified Wrath talent - Increase duration by 25%
-					duration	= function(guid, spell) if RCT:PlayerHasTalentSelected(guid, 6, 2) then return spell.duration * 1.25 else return spell.duration end end
+					duration	= function(playerHandle, spell) if RCT:PlayerHasTalentSelected(playerHandle, 6, 2) then return spell.duration * 1.25 else return spell.duration end end
 				}
 			},
 			[105809] = {	-- Holy Avenger
@@ -84,7 +84,7 @@ RCT.spellDB = {
 				resetOnWipe	= true,
 				modifiers	= {
 					-- Unbreakable Spirit talent - Reduce cooldown by 30%
-					cooldown	= function(guid, spell) if RCT:PlayerHasTalentSelected(guid, 2, 2) then return spell.cooldown * 0.7 else return spell.cooldown end end
+					cooldown	= function(playerHandle, spell) if RCT:PlayerHasTalentSelected(playerHandle, 2, 2) then return spell.cooldown * 0.7 else return spell.cooldown end end
 				}
 			},
 			[1022] = {		-- Blessing of Protection
@@ -111,7 +111,7 @@ RCT.spellDB = {
 				resetOnWipe	= true,
 				modifiers	= {
 					-- Unbreakable Spirit talent - Reduce cooldown by 30%
-					cooldown	= function(guid, spell) if RCT:PlayerHasTalentSelected(guid, 2, 2) then return spell.cooldown * 0.7 else return spell.cooldown end end
+					cooldown	= function(playerHandle, spell) if RCT:PlayerHasTalentSelected(playerHandle, 2, 2) then return spell.cooldown * 0.7 else return spell.cooldown end end
 				}
 			},
 		},
@@ -180,7 +180,7 @@ RCT.spellDB = {
 				level		= 18,
 				resetOnWipe	= true,
 				modifiers	= {
-					cooldown	= function(guid, spell) if RCT:PlayerHasTalentSelected(6, 1) then return spell.cooldown * 0.8 else return spell.cooldown end end
+					cooldown	= function(playerHandle, spell) if RCT:PlayerHasTalentSelected(playerHandle, 6, 1) then return spell.cooldown * 0.8 else return spell.cooldown end end
 				}
 			},
 			[1022] = {		-- Blessing of Protection
@@ -238,7 +238,7 @@ RCT.spellDB = {
 				level		= 80,
 				modifiers	= {
 					-- Inner Peace talent - Reduce the cooldown by 60 seconds
-					cooldown	= function(guid, spell) if RCT:PlayerHasTalentSelected(guid, 6, 2) then return spell.cooldown - 60 else return spell.cooldown end end
+					cooldown	= function(playerHandle, spell) if RCT:PlayerHasTalentSelected(playerHandle, 6, 2) then return spell.cooldown - 60 else return spell.cooldown end end
 				}
 			},
 			[102342] = {	-- Ironbark
@@ -249,7 +249,7 @@ RCT.spellDB = {
 				level		= 54,
 				modifiers	= {
 					-- Stonebark talent - Reduce the cooldown by 30 seconds
-					cooldown	= function(guid, spell) if RCT:PlayerHasTalentSelected(guid, 7, 2) then return spell.cooldown - 30 else return spell.cooldown end end
+					cooldown	= function(playerHandle, spell) if RCT:PlayerHasTalentSelected(playerHandle, 7, 2) then return spell.cooldown - 30 else return spell.cooldown end end
 				}
 			},
 			[208253] = {	-- Essence of G'Hanir

@@ -8,209 +8,119 @@ local AceDB = LibStub("AceDB-3.0")
 
 RCT.trackedPlayers = { }
 
-RCT.availablePlayerFrames = { }
-RCT.availablePlayerSpellFrames = { }
+--[[ Player Handle ]]--
 
-RCT.numCreatedPlayerFrames = 0
-RCT.numCreatedPlayerSpellFrames = 0
-
---[[ Frame Creation ]]--
-
-function RCT:ClaimPlayerFrame(guid)
-	if #RCT.availablePlayerFrames > 0 then
-		local frame = RCT.availablePlayerFrames[1]
-		table.remove(RCT.availablePlayerFrames, 1)
-		return frame
+function RCT:CreatePlayerHandle(guid, info)
+	if RCT:HasPlayerHandle(guid) then
+		return RCT:GetPlayerHandle(guid)
 	end
 
-	RCT.numCreatedPlayerFrames = RCT.numCreatedPlayerFrames + 1
-	local frame = CreateFrame("Frame", "RCT_PlayerFrame_" .. RCT.numCreatedPlayerFrames, RCT.frame)
+	local player = { }
+	player.guid = guid
+	player.info = info
+	player.dead = false
+	player.cache = {}
+	player.cache.global_spec_id = info.global_spec_id
+	player.cache.level = UnitLevel(info.lku)
+	player.cache.talents = RCT:CacheTalents(info.talents)
+	player.spells = { }
 
-	RCT:ResetPlayerFrameData(frame)
-	return frame
+	RCT.trackedPlayers[guid] = player
+	RCT:HandlePlayerSpecSwitch(player, info)
+
+	return player
 end
 
-function RCT:ClaimPlayerSpellFrame(guid, spellId)
-	if #RCT.availablePlayerSpellFrames > 0 then
-		local frame = RCT.availabavailablePlayerSpellFramesleSpellFrames[1]
-		table.remove(RCT.availablePlayerSpellFrames, 1)
-		return frame
+function RCT:DestroyPlayerHandle(playerHandle)
+	if playerHandle == nil then
+		return
 	end
 
-	RCT.numCreatedPlayerSpellFrames = RCT.numCreatedPlayerSpellFrames + 1
-	local frame = CreateFrame("Frame", "RCT_PlayerSpellFrame_" .. RCT.numCreatedPlayerSpellFrames, RCT.trackedPlayers[guid].frame)
-	
-	RCT:ResetPlayerSpellFrameData(frame)
-	return frame
-end
-
-function RCT:ReleasePlayerFrame(guid)
-	if RCT.trackedPlayers[guid] ~= nil and RCT.trackedPlayers[guid].frame ~= nil then
-		RCT:ResetPlayerFrameData(RCT.trackedPlayers[guid].frame)
-		RCT.trackedPlayers[guid].frame = nil
+	for _, spellHandle in pairs(playerHandle.spells) do
+		RCT:DestroySpellHandle(spellHandle)
 	end
+
+	RCT.trackedPlayers[playerHandle.guid] = nil
 end
 
-function RCT:ReleasePlayerSpellFrame(guid, spellId)
-	if RCT.trackedPlayers[guid] ~= nil and RCT.trackedPlayers[guid].spells[spellId] ~= nil and RCT.trackedPlayers[guid].spells[spellId].frame ~= nil then
-		RCT:ResetPlayerSpellFrameData(RCT.trackedPlayers[guid].spells[spellId].frame)
-		RCT.trackedPlayers[guid].spells[spellId].frame = nil
-	end
-end
+function RCT:UpdatePlayerHandle(playerHandle, info)
+	playerHandle.info = info
 
-function RCT:ResetPlayerFrameData(frame)
+	if playerHandle.cache.global_spec_id ~= info.global_spec_id then
+		RCT:HandlePlayerSpecSwitch(playerHandle, info)
+	else
+		local shouldUpdate = false
 
-end
-
-function RCT:ResetPlayerSpellFrameData(frame)
-
-end
-
---[[ Player ]]--
-
-function RCT:CreatePlayer(guid, info)
-	if RCT.trackedPlayers[guid] == nil then
-		local player = { }
-		player.guid = guid
-		player.info = info
-		player.hidden = false
-		player.dead = false
-		player.frame = nil
-		player.spec = info.global_spec_id
-		player.talents = info.talents
-		player.level = UnitLevel(info.lku)
-		player.spells = { }
-
-		RCT.trackedPlayers[guid] = player
-		RCT:ClaimPlayerFrame(guid)
-
-		RCT:HandlePlayerSpecSwitch(guid, info)
-	end
-end
-
-function RCT:DestroyPlayer(guid)
-	if RCT.trackedPlayers[guid] ~= nil then
-		RCT:ReleasePlayerFrame(guid)
-		RCT.trackedPlayers[guid] = nil
-	end
-end
-
-function RCT:UpdatePlayer(guid, info)
-	if RCT.trackedPlayers[guid] ~= nil then
-		RCT.trackedPlayers[guid].info = info
-		
-		-- Handle spec switch
-		if info.global_spec_id ~= RCT.trackedPlayers[guid].spec then
-			RCT:HandlePlayerSpecSwitch(guid, info)
+		-- Handle level up
+		if UnitLevel(info.lku) ~= playerHandle.level then
+			shouldUpdate = true
+		-- Handle talent switch
 		else
-			local shouldUpdate = false
+			for _, existing_talent_id in ipairs(playerHandle.cache.talents) do
+				local contains = false
 
-			-- Handle level up
-			if UnitLevel(info.lku) ~= RCT.trackedPlayers[guid].level then
-				shouldUpdate = true
-			-- Handle talent switch
-			else
-				for _, existing_talent_id in ipairs(RCT.trackedPlayers[guid].talents) do
-					local contains = false
-
-					for new_talent_id, _ in pairs(info.talents) do
-						if new_talent_id == existing_talent_id then
-							contains = true
-							break
-						end
-					end
-
-					if not contains then
-						shouldUpdate = true
+				for new_talent_id, _ in pairs(info.talents) do
+					if new_talent_id == existing_talent_id then
+						contains = true
 						break
 					end
 				end
-			end
 
-			if shouldUpdate then
-				RCT:HandlePlayerLevelUpOrTalentSwitch(guid, info)
+				if not contains then
+					shouldUpdate = true
+					break
+				end
 			end
+		end
+
+		if shouldUpdate then
+			RCT:HandlePlayerLevelUpOrTalentSwitch(playerHandle, info)
 		end
 	end
 end
 
-function RCT:ShowPlayer(guid, show)
-	if RCT.trackedPlayers[guid] ~= nil then
-		RCT.trackedPlayers[guid].hidden = not show
-
-		-- TODO: Frame
-	end
-end
-
-function RCT:ShowPlayerSpell(guid, spellId, show)
-	if RCT.trackedPlayers[guid] ~= nil and RCT.trackedPlayers[guid].spells[spellId] ~= nil then
-		RCT.trackedPlayers[guid].spells[spellId].hidden = not show
-		
-		-- TODO: Frame
-	end
-end
-
-function RCT:AddPlayerSpell(guid, spellId)
-	local spell = { }
-	spell.spellId = spellId
-	spell.frame = nil
-	spell.hidden = false
-	spell.castable = false
-	spell.activeStart = 0
-	spell.activeEnd	= 0
-	spell.readyTime	= 0
-
-	RCT.trackedPlayers[guid].spells[spellId] = spell
-	RCT:ClaimPlayerSpellFrame(guid, spellId)
-end
-
-function RCT:HandlePlayerSpecSwitch(guid, info)
-	-- We're still missing info about the player
-	if info == nil or info.class == nil or info.global_spec_id == nil then
+function RCT:HandlePlayerSpecSwitch(playerHandle, info)
+	-- We're still missing info about the player	
+	if info == nil or info.class == nil or info.global_spec_id == 0 then
 		return
 	end
 
-	local newSpells = RCT.spellDB[info.class][info.global_spec_id]
-	if newSpells == nil then return end
-	
-	RCT.trackedPlayers[guid].spec = info.global_spec_id
+	playerHandle.cache.global_spec_id = info.global_spec_id
 
-	local playerInfo = RCT.trackedPlayers[guid].info
-	local playerSpellCache = RCT.trackedPlayers[guid].spells
+	local newSpells = RCT:GetSpellsForSpec(info.class, info.global_spec_id)
+	local oldSpells = playerHandle.spells
 
 	-- Remove spells not available for the new spec
-	for spellId, _ in pairs(playerSpellCache) do
+	for spellId, _ in pairs(oldSpells) do
 		if not RCT:TableContainsKey(newSpells, spellId) then
-			RCT:ReleasePlayerSpellFrame(guid, spellId)
-			RCT.trackedPlayers[guid].spells[spellId] = nil
+			RCT:DestroySpellHandle(oldSpells[spellId])
 		end
 	end
 
 	-- Add new spells
 	for spellId, _ in pairs(newSpells) do
-		if not RCT:TableContainsKey(RCT.trackedPlayers[guid].spells, spellId) then
-			RCT:AddPlayerSpell(guid, spellId)
+		if not RCT:TableContainsKey(playerHandle.spells, spellId) then
+			RCT:CreateSpellHandle(playerHandle, spellId)
 		end
 	end
 
-	RCT:HandlePlayerLevelUpOrTalentSwitch(guid, info)
+	RCT:HandlePlayerLevelUpOrTalentSwitch(playerHandle, info)
 end
 
-function RCT:HandlePlayerLevelUpOrTalentSwitch(guid, info)
-	RCT.trackedPlayers[guid].talents = { }
-	for talent_id, _ in pairs(info.talents) do
-		table.insert(RCT.trackedPlayers[guid].talents, talent_id)
+function RCT:HandlePlayerLevelUpOrTalentSwitch(playerHandle, info)
+	-- We're still missing info about the player	
+	if info == nil or info.talents == nil or #info.talents == 0 then
+		return
 	end
 
-	RCT.trackedPlayers[guid].level = UnitLevel(info.lku)
+	player.cache.talents = RCT:CacheTalents(info.talents)
+	player.level = UnitLevel(info.lku)
 
-	for _, spell in pairs(RCT.trackedPlayers[guid].spells) do
-		local playerInfo = RCT.trackedPlayers[guid].info
-		local spellInfo = RCT:GetSpellInfo(playerInfo.class, playerInfo.global_spec_id, spell.spellId)
-
+	for _, spellHandle in pairs(player.spells) do
+		local spellInfo = RCT:GetSpellInfo(spellHandle)
 		local castable = false
 		
-		if RCT.trackedPlayers[guid].level >= spellInfo.level then
+		if player.cache.level >= spellInfo.level then
 			castable = true
 
 			-- Check if the spell is a talent
@@ -218,7 +128,9 @@ function RCT:HandlePlayerLevelUpOrTalentSwitch(guid, info)
 				local hasTalentSelected = false
 				
 				for i=1, #spellInfo.talents do
-					if RCT:PlayerHasTalentSelected(guid, spellInfo.talents[i].tier, spellInfo.talents[i].column) then
+					local talent = spellInfo.talents[i]
+
+					if RCT:PlayerHasTalentSelected(guid, talent.tier, talent.column) then
 						hasTalentSelected = true
 						break
 					end
@@ -228,83 +140,86 @@ function RCT:HandlePlayerLevelUpOrTalentSwitch(guid, info)
 			end
 		end
 
-		RCT.trackedPlayers[guid].spells[spell.spellId].castable = castable
+		spellHandle.castable = castable
 	end
 end
 
-function RCT:HandlePlayerSpellCast(guid, spellId)
-	if RCT.trackedPlayers[guid] ~= nil and RCT.trackedPlayers[guid].spells[spellId] ~= nil then
-		local duration = RCT:GetPlayerSpellDuration(guid, spellId)
-		local cooldown = RCT:GetPlayerSpellCooldown(guid, spellId)
-
-		-- We wrongly marked this spell as not-castable but apperantly it is castable
-		if not RCT.trackedPlayers[guid].spells[spellId].castable then
-			RCT.trackedPlayers[guid].spells[spellId].castable = true
-		end
-
-		if duration > 0 then
-			RCT.trackedPlayers[guid].spells[spellId].activeStart = GetTime()
-			RCT.trackedPlayers[guid].spells[spellId].activeEnd = GetTime() + duration
-
-			RCT:ScheduleTimer("HandlePlayerSpellCastActiveEnd", duration, guid, spellId)
-		end
-
-		RCT.trackedPlayers[guid].spells[spellId].castTime = GetTime()
-		RCT.trackedPlayers[guid].spells[spellId].readyTime = GetTime() + cooldown
-		RCT:ScheduleTimer("HandlePlayerSpellCastCooldownEnd", cooldown, guid, spellId)
-
-		-- TEMP
-		do
-			local playerInfo = RCT.trackedPlayers[guid].info
-			local spellInfo = RCT:GetSpellInfo(playerInfo.class, playerInfo.global_spec_id, spellId)
-			print(playerInfo.name .. " cast spell: " .. spellInfo.name .. " (Duration=" .. duration .. " Cooldown=" .. cooldown .. ")")
-		end
-	end
-end
-
--- TEMP
-function RCT:HandlePlayerSpellCastActiveEnd(guid, spellId)
-	if RCT.trackedPlayers[guid] ~= nil and RCT.trackedPlayers[guid].spells[spellId] ~= nil then
-		local playerInfo = RCT.trackedPlayers[guid].info
-		local spellInfo = RCT:GetSpellInfo(playerInfo.class, playerInfo.global_spec_id, spellId)
-		print(spellInfo.name .. " is no longer active for " .. playerInfo.name)
-	end
-end
-
--- TEMP
-function RCT:HandlePlayerSpellCastCooldownEnd(guid, spellId)
-	if RCT.trackedPlayers[guid] ~= nil and RCT.trackedPlayers[guid].spells[spellId] ~= nil then
-		local playerInfo = RCT.trackedPlayers[guid].info
-		local spellInfo = RCT:GetSpellInfo(playerInfo.class, playerInfo.global_spec_id, spellId)
-		print(spellInfo.name .. " is off cooldown for " .. playerInfo.name)
-	end
-end
-
-function RCT:EnablePlayerSpellTracking(guid, spellId, enable)
-	if RCT.trackedPlayers[guid] ~= nil and RCT.trackedPlayers[guid].spells[spellId] ~= nil then
-		RCT.trackedPlayers[guid].spells[spellId].hidden = not enable
-	end
-end
-
-function RCT:PlayerHasTalentSelected(guid, tier, column)
-	if RCT.trackedPlayers[guid] ~= nil then
-		for _, talent in pairs(RCT.trackedPlayers[guid].info.talents) do
-			if talent.tier == tier and talent.column == column then
-				return true
-			end
-		end
+function RCT:GetPlayerHandle(guid)
+	if RCT:HasPlayerHandle(guid) then
+		return RCT.trackedPlayers[guid]
 	end
 
-	return false
+	return nil
 end
 
-function RCT:GetPlayerSpellDuration(guid, spellId)
-	local playerInfo = RCT.trackedPlayers[guid].info
-	local spellInfo = RCT:GetSpellInfo(playerInfo.class, playerInfo.global_spec_id, spellId)
-	
-	if spellInfo ~= nil and spellInfo.duration ~= nil then
+function RCT:HasPlayerHandle(guid)
+	return RCT.trackedPlayers[guid] ~= nil
+end
+
+--[[ Spell Handle ]]--
+
+function RCT:CreateSpellHandle(playerHandle, spellId)
+	if RCT:HasSpellHandle(playerHandle, spellId) then
+		return RCT:GetSpellHandle(playerHandle, spellId)
+	end
+
+	local spell = { }
+	spell.playerHandle = playerHandle
+	spell.spellId = spellId
+	spell.castable = false
+	spell.activeStart = 0
+	spell.activeEnd	= 0
+	spell.readyTime	= 0
+	spell.activeTimer = nil
+	spell.cooldownTimer = nil
+
+	playerHandle.spells[spellId] = spell
+	return spell
+end
+
+function RCT:DestroySpellHandle(spellHandle)
+	if spellHandle == nil then
+		return
+	end
+
+	RCT:CancelTimer(spellHandle.activeTimer)
+	RCT:CancelTimer(spellHandle.cooldownTimer)
+
+	spellHandle.playerHandle.spells[spellHandle.spellId] = nil
+end
+
+function RCT:GetSpellHandle(playerHandle, spellId)
+	if RCT:HasSpellHandle(playerHandle, spellId) then
+		return playerHandle.spells[spellId]
+	end
+
+	return nil
+end
+
+function RCT:HasSpellHandle(playerHandle, spellId)
+	return playerHandle.spells[spellId] ~= nil
+end
+
+--[[ Spell Database ]]--
+
+function RCT:GetSpellsForSpec(class, spec)
+	return RCT.spellDB[class][spec]
+end
+
+function RCT:GetSpellInfo(spellHandle)
+	local class = spellHandle.playerHandle.info.class
+	local spec = spellHandle.playerHandle.info.global_spec_id
+
+	local spells = RCT:GetSpellsForSpec(class, spec)
+	return spells[spellHandle.spellId]
+end
+
+function RCT:GetSpellDuration(spellHandle)
+	local spellInfo = RCT:GetSpellInfo(spellHandle)
+
+	if spellInfo.duration ~= nil then
 		if spellInfo.modifiers ~= nil and spellInfo.modifiers.duration ~= nil then
-			return spellInfo.modifiers.duration(guid, spellInfo)
+			return spellInfo.modifiers.duration(spellHandle.playerHandle, spellInfo)
 		end
 
 		return spellInfo.duration
@@ -313,13 +228,12 @@ function RCT:GetPlayerSpellDuration(guid, spellId)
 	return 0
 end
 
-function RCT:GetPlayerSpellCooldown(guid, spellId)
-	local playerInfo = RCT.trackedPlayers[guid].info
-	local spellInfo = RCT:GetSpellInfo(playerInfo.class, playerInfo.global_spec_id, spellId)
-	
-	if spellInfo ~= nil and spellInfo.cooldown ~= nil then
+function RCT:GetSpellCooldown(spellHandle)
+	local spellInfo = RCT:GetSpellInfo(spellHandle)
+
+	if spellInfo.cooldown ~= nil then
 		if spellInfo.modifiers ~= nil and spellInfo.modifiers.cooldown ~= nil then
-			return spellInfo.modifiers.cooldown(guid, spellInfo)
+			return spellInfo.modifiers.cooldown(spellHandle.playerHandle, spellInfo)
 		end
 
 		return spellInfo.cooldown
@@ -328,10 +242,57 @@ function RCT:GetPlayerSpellCooldown(guid, spellId)
 	return 0
 end
 
---[[ Spell ]]--
+--[[ Tracking ]]--
 
-function RCT:GetSpellInfo(class, spec, spellId)
-	return RCT.spellDB[class][spec][spellId]
+function RCT:HandlePlayerSpellCast(spellHandle)
+	-- Make sure the spell if marked as castable
+	spellHandle.castable = true
+
+	local duration = RCT:GetSpellDuration(spellHandle)
+	local cooldown = RCT:GetSpellCooldown(spellHandle)
+
+	if duration > 0 then
+		spellHandle.activeStart = GetTime()
+		spellHandle.activeEnd = GetTime() + duration
+		spellHandle.activeTimer = RCT:ScheduleTimer("HandlePlayerSpellCastActiveEnd", duration, spellHandle)
+	end
+
+	spellHandle.castTime = GetTime()
+	spellHandle.readyTime = GetTime() + cooldown
+	spellHandle.cooldownTimer = RCT:ScheduleTimer("HandlePlayerSpellCastCooldownEnd", cooldown, spellHandle)
+
+	-- TEMP
+	do
+		local playerHandle = spellHandle.playerHandle
+		local spellInfo = RCT:GetSpellInfo(spellHandle)
+
+		print(playerHandle.info.name .. " cast spell: " .. spellInfo.name .. " (Duration=" .. duration .. " Cooldown=" .. cooldown .. ")")
+	end
+end
+
+function RCT:ResetSpellStatus(spellHandle)
+	spellHandle.activeStart = 0
+	spellHandle.activeEnd = 0
+	spellHandle.readyTime = 0
+
+	RCT:CancelTimer(spellHandle.activeTimer)
+	RCT:CancelTimer(spellHandle.cooldownTimer)
+end
+
+-- TEMP
+function RCT:HandlePlayerSpellCastActiveEnd(spellHandle)
+	local playerHandle = spellHandle.playerHandle
+	local spellInfo = RCT:GetSpellInfo(spellHandle)
+
+	print(spellInfo.name .. " is no longer active for " .. playerHandle.info.name)
+end
+
+-- TEMP
+function RCT:HandlePlayerSpellCastCooldownEnd(spellHandle)
+	local playerHandle = spellHandle.playerHandle
+	local spellInfo = RCT:GetSpellInfo(spellHandle)
+
+	print(spellInfo.name .. " is off cooldown for " .. playerHandle.info.name)
 end
 
 --[[ LibStub callbacks & event callbacks ]]--
@@ -345,7 +306,19 @@ function RCT:ENCOUNTER_START(evt, encounterId, encounterName, difficultyId, grou
 end
 
 function RCT:ENCOUNTER_END(evt, encounterId, encounterName, difficultyId, groupSize, success)
+	if groupSize >= 10 then
+		for _, playerHandle in pairs(RCT.trackedPlayers) do
+			for _, spellHandle in pairs(playerHandle.spells) do
+				local spellInfo = RCT:GetSpellInfo(spellHandle)
+				
+				if spellInfo.resetOnWipe then
+					RCT:ResetSpellStatus(spellHandle)
+				end
+			end
+		end
 
+		print("Reset cooldowns")
+	end
 end
 
 function RCT:COMBAT_LOG_EVENT_UNFILTERED(evt, ...)
@@ -353,8 +326,16 @@ function RCT:COMBAT_LOG_EVENT_UNFILTERED(evt, ...)
 		local type, _, guid = select(2, ...)
 
 		if type == "SPELL_CAST_SUCCESS" then
-			local spellId = select(12, ...)
-			RCT:HandlePlayerSpellCast(guid, spellId)
+			local playerHandle = RCT:GetPlayerHandle(guid)
+
+			if playerHandle ~= nil then
+				local spellId = select(12, ...)
+				local spellHandle = RCT:GetSpellHandle(playerHandle, spellId)
+				
+				if spellHandle ~= nil then
+					RCT:HandlePlayerSpellCast(spellHandle)
+				end
+			end
 		end
 	end
 end
@@ -378,43 +359,19 @@ end
 --[[ LibGroupInSpecT callbacks ]]--
 
 function RCT:OnUnitUpdated(evt, guid, unitId, info)
-	if RCT.trackedPlayers[guid] == nil then
-		RCT:CreatePlayer(guid, info)
+	if not RCT:HasPlayerHandle(guid) then
+		RCT:CreatePlayerHandle(guid, info)
 	end
 
-	RCT:UpdatePlayer(guid, info)
+	local playerHandle = RCT:GetPlayerHandle(guid)
+	RCT:UpdatePlayerHandle(playerHandle, info)
 end
 
 function RCT:OnUnitRemoved(evt, guid)
-	RCT:DestroyPlayer(guid)
-end
-
---[[ Frames ]]--
-
--- TODO: Check with config settings
--- Check whether or not the frame should be visible
-function RCT:ShouldFrameBeVisible()
-	local groupType = RCT:GetGroupType()
-
-	-- Always show
-	
-	-- Only in raid group
-	if groupType == "raid" then
-		return true
+	if RCT:HasPlayerHandle(guid) then
+		local playerHandle = RCT:GetPlayerHandle(guid)
+		RCT:DestroyPlayerHandle(playerHandle)
 	end
-	
-	-- Only in raid or pary groups
-	if groupType == "raid" or groupType == "party" then
-		return true
-	end
-
-	return false
-end
-
--- TODO: Check if the frame is actually visible
--- Check whether or not the frame is visible
-function RCT:IsFrameVisible()
-	return true
 end
 
 --[[ Helper functions ]]--
@@ -440,4 +397,22 @@ function RCT:TableContainsKey(table, value)
     end
 
     return false
+end
+
+function RCT:PlayerHasTalentSelected(playerHandle, tier, column)
+	for _, talent in pairs(playerHandle.info.talents) do
+		if talent.tier == tier and talent.column == column then
+			return true
+		end
+	end
+end
+
+function RCT:CacheTalents(talents)
+	local result = { }
+
+	for talent_id, _ in pairs(talents) do
+		table.insert(result, talent_id)
+	end
+
+	return result
 end
