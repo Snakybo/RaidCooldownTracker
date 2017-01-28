@@ -12,7 +12,7 @@ RCT.trackedPlayers = { }
 
 function RCT:CreatePlayerHandle(guid, info)
 	if RCT:HasPlayerHandle(guid) then
-		return RCT:GetPlayerHandle(guid)
+		return nil
 	end
 
 	local player = { }
@@ -20,14 +20,13 @@ function RCT:CreatePlayerHandle(guid, info)
 	player.info = info
 	player.dead = false
 	player.cache = {}
-	player.cache.global_spec_id = info.global_spec_id
-	player.cache.level = UnitLevel(info.lku)
-	player.cache.talents = RCT:CacheTalents(info.talents)
+	player.cache.global_spec_id = 0
+	player.cache.level = 0
+	player.cache.talents = nil
 	player.spells = { }
 
 	RCT.trackedPlayers[guid] = player
-	RCT:HandlePlayerSpecSwitch(player, info)
-
+	
 	return player
 end
 
@@ -81,12 +80,12 @@ end
 
 function RCT:HandlePlayerSpecSwitch(playerHandle, info)
 	-- We're still missing info about the player	
-	if info == nil or info.class == nil or info.global_spec_id == 0 then
+	if info == nil or info.class == nil or info.global_spec_id == nil or info.global_spec_id == 0 then
 		return
 	end
 
 	playerHandle.cache.global_spec_id = info.global_spec_id
-
+	
 	local newSpells = RCT:GetSpellsForSpec(info.class, info.global_spec_id)
 	local oldSpells = playerHandle.spells
 
@@ -109,18 +108,18 @@ end
 
 function RCT:HandlePlayerLevelUpOrTalentSwitch(playerHandle, info)
 	-- We're still missing info about the player	
-	if info == nil or info.talents == nil or #info.talents == 0 then
+	if info == nil or info.talents == nil then
 		return
 	end
 
-	player.cache.talents = RCT:CacheTalents(info.talents)
-	player.level = UnitLevel(info.lku)
+	playerHandle.cache.talents = RCT:CacheTalents(info.talents)
+	playerHandle.level = UnitLevel(info.lku)
 
-	for _, spellHandle in pairs(player.spells) do
+	for _, spellHandle in pairs(playerHandle.spells) do
 		local spellInfo = RCT:GetSpellInfo(spellHandle)
 		local castable = false
 		
-		if player.cache.level >= spellInfo.level then
+		if playerHandle.cache.level >= spellInfo.level then
 			castable = true
 
 			-- Check if the spell is a talent
@@ -130,7 +129,7 @@ function RCT:HandlePlayerLevelUpOrTalentSwitch(playerHandle, info)
 				for i=1, #spellInfo.talents do
 					local talent = spellInfo.talents[i]
 
-					if RCT:PlayerHasTalentSelected(guid, talent.tier, talent.column) then
+					if RCT:PlayerHasTalentSelected(playerHandle, talent.tier, talent.column) then
 						hasTalentSelected = true
 						break
 					end
@@ -160,9 +159,9 @@ end
 
 function RCT:CreateSpellHandle(playerHandle, spellId)
 	if RCT:HasSpellHandle(playerHandle, spellId) then
-		return RCT:GetSpellHandle(playerHandle, spellId)
+		return nil
 	end
-
+	
 	local spell = { }
 	spell.playerHandle = playerHandle
 	spell.spellId = spellId
