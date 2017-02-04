@@ -223,7 +223,14 @@ RCT.spellDB = {
 		}
 	},
 	[RCT.classes.Druid] = {
-		[RCT.specs.Druid.Balance] = {			
+		[RCT.specs.Druid.Balance] = {
+			[29166] = {		-- Innervate
+				name		= "Innervate",
+				spellId 	= 29166,
+				cooldown 	= 180,
+				duration	= 10,
+				level		= 50
+			}		
 		},
 		[RCT.specs.Druid.Feral] = {			
 		},
