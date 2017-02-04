@@ -7,6 +7,15 @@ local LGIST = LibStub("LibGroupInSpecT-1.1")
 local AceDB = LibStub("AceDB-3.0")
 
 RCT.trackedPlayers = { }
+--RCT.__debugMode = true
+
+-- Local variables
+
+local availablePlayerFrames = { }
+local numPlayerFrames = 0
+
+local availableSpellFramess = { }
+local numSpellFrames = 0
 
 --[[ Player Handle ]]--
 
@@ -19,6 +28,7 @@ function RCT:CreatePlayerHandle(guid, info)
 	player.guid = guid
 	player.info = info
 	player.dead = false
+	player.frameHandle = nil
 	player.cache = {}
 	player.cache.global_spec_id = 0
 	player.cache.level = 0
@@ -26,6 +36,7 @@ function RCT:CreatePlayerHandle(guid, info)
 	player.spells = { }
 
 	RCT.trackedPlayers[guid] = player
+	RCT:InitializePlayerFrameHandle(player)
 	
 	return player
 end
@@ -166,6 +177,7 @@ function RCT:CreateSpellHandle(playerHandle, spellId)
 	spell.playerHandle = playerHandle
 	spell.spellId = spellId
 	spell.castable = false
+	spell.frameHandle = nil
 	spell.activeStart = 0
 	spell.activeEnd	= 0
 	spell.readyTime	= 0
@@ -173,6 +185,8 @@ function RCT:CreateSpellHandle(playerHandle, spellId)
 	spell.cooldownTimer = nil
 
 	playerHandle.spells[spellId] = spell
+	RCT:InitialzeSpellFrameHandle(spell)
+
 	return spell
 end
 
@@ -241,6 +255,132 @@ function RCT:GetSpellCooldown(spellHandle)
 	return 0
 end
 
+--[[ Frame ]]--
+
+function RCT:InitializePlayerFrameHandle(playerHandle)
+	local frameHandle = RCT:CreatePlayerFrameHandle()
+	local classColor = RAID_CLASS_COLORS[playerHandle.info.class]
+	frameHandle.playerName:SetText(playerHandle.info.name)
+	frameHandle.playerName:SetTextColor(classColor.r, classColor.g, classColor.b, 1)
+
+	playerHandle.frameHandle = frameHandle
+	RCT:RearrangeFrameList()
+end
+
+function RCT:ReleasePlayerFrame(playerHandle)
+
+end
+
+function RCT:CreatePlayerFrameHandle()
+	-- temp
+	RCT.frame:SetPoint("CENTER", 0, 0)
+	RCT.frame:SetWidth(200)
+	RCT.frame:SetHeight(500)
+	--RCT.frame:SetFrameStrata("LOW")
+
+	numPlayerFrames = numPlayerFrames + 1
+	
+	local frameHandle = { }	
+	frameHandle.id = numPlayerFrames
+
+	-- Main Frame
+	frameHandle.frame = CreateFrame("Frame", "RCT_PlayerFrame_" .. numPlayerFrames, RCT.frame)
+	frameHandle.frame:SetClampedToScreen(true)
+	frameHandle.frame:SetWidth(RCT.frame:GetWidth())
+	frameHandle.frame:SetHeight(20)
+
+	-- Player Name
+	frameHandle.playerName = frameHandle.frame:CreateFontString("$parent_PlayerName", "OVERLAY", "GameFontNormal")
+	frameHandle.playerName:SetPoint("TOPLEFT", frameHandle.frame)
+	frameHandle.playerName:SetWidth(frameHandle.frame:GetWidth())
+	frameHandle.playerName:SetHeight(20)
+	frameHandle.playerName:SetJustifyH("LEFT")
+
+	return frameHandle
+end
+
+function RCT:InitialzeSpellFrameHandle(spellHandle)
+	local spellInfo = RCT:GetSpellInfo(spellHandle)
+
+	local frameHandle = RCT:CreateSpellFrameHandle()
+	local playerFrameHandle = spellHandle.playerHandle.frameHandle
+	
+	frameHandle.icon:SetTexture(select(3, GetSpellInfo(spellInfo.spellId)))
+	frameHandle.spellName:SetText(spellInfo.name)
+	frameHandle.cooldown:SetTextColor(0, 1, 0, 1)
+	frameHandle.cooldown:SetText("Ready")
+	
+	spellHandle.frameHandle = frameHandle
+	RCT:RearrangeFrameList()
+end
+
+function RCT:CreateSpellFrameHandle()
+	numSpellFrames = numSpellFrames + 1
+
+	local frameHandle = { }
+	frameHandle.id = numSpellFrames
+
+	-- Main Frame
+	frameHandle.frame = CreateFrame("Frame", "RCT_SpellFrame_" ..numSpellFrames, RCT.frame)
+	frameHandle.frame:SetWidth(RCT.frame:GetWidth())
+	frameHandle.frame:SetHeight(20)
+
+	frameHandle.icon = frameHandle.frame:CreateTexture("$parent_Icon", "OVERLAY")
+	frameHandle.icon:SetWidth(15)
+	frameHandle.icon:SetHeight(15)
+	frameHandle.icon:SetPoint("LEFT", frameHandle.frame, "LEFT")
+	frameHandle.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+
+	frameHandle.spellName = frameHandle.frame:CreateFontString("$parent_SpellName", "OVERLAY", "GameFontNormal")
+	frameHandle.spellName:SetWidth(frameHandle.frame:GetWidth() * 0.6)
+	frameHandle.spellName:SetHeight(frameHandle.frame:GetHeight())
+	frameHandle.spellName:SetPoint("LEFT", frameHandle.icon, "RIGHT", 3, 0)
+	frameHandle.spellName:SetJustifyH("LEFT")
+
+	frameHandle.cooldown = frameHandle.frame:CreateFontString("$parent_CooldownText", "OVERLAY", "GameFontNormal")
+	frameHandle.cooldown:SetWidth(frameHandle.frame:GetWidth() * 0.3)
+	frameHandle.cooldown:SetHeight(frameHandle.frame:GetHeight())
+	frameHandle.cooldown:SetPoint("RIGHT", frameHandle.frame, "RIGHT")
+	frameHandle.cooldown:SetJustifyH("RIGHT")
+
+	return frameHandle;
+end
+
+function RCT:RearrangeFrameList()
+	local frameHandleOrder = { }
+
+	for _, playerHandle in pairs(RCT.trackedPlayers) do
+		local frameHandle = playerHandle.frameHandle
+		frameHandleOrder[frameHandle.id] = { playerHandle, frameHandle }
+	end
+	
+	local lastFrameHandle = nil
+	local lastFrameHandleHeight = 0
+	for i=1, #frameHandleOrder do
+		if frameHandleOrder[i] ~= nil then
+			local playerHandle = frameHandleOrder[i][1]
+			local frameHandle = frameHandleOrder[i][2]
+
+			if lastFrameHandle == nil then
+				frameHandle.frame:SetPoint("TOPLEFT", RCT.frame)
+			else
+				frameHandle.frame:SetPoint("TOPLEFT", lastFrameHandle.frame, "BOTTOMLEFT", 0, -lastFrameHandleHeight)
+			end
+
+			local nextY = frameHandle.frame:GetHeight()
+			for _, spellHandle in pairs(playerHandle.spells) do
+				local spellFrameHandle = spellHandle.frameHandle
+
+				spellFrameHandle.frame:SetPoint("TOPLEFT", frameHandle.frame, "TOPLEFT", 0, -nextY)
+				nextY = nextY + spellFrameHandle.frame:GetHeight()
+			end
+
+			lastFrameHandle = frameHandle
+			lastFrameHandleHeight = nextY
+		end
+	end
+end
+
 --[[ Tracking ]]--
 
 function RCT:HandlePlayerSpellCast(spellHandle)
@@ -254,12 +394,18 @@ function RCT:HandlePlayerSpellCast(spellHandle)
 		spellHandle.activeStart = GetTime()
 		spellHandle.activeEnd = GetTime() + duration
 		spellHandle.activeTimer = RCT:ScheduleTimer("HandlePlayerSpellCastActiveEnd", duration, spellHandle)
+
+		spellHandle.frameHandle.cooldown:SetTextColor(1, 1, 0, 1)
+		spellHandle.frameHandle.cooldown:SetText("Active")
+	else
+		spellHandle.frameHandle.cooldown:SetTextColor(1, 0, 0, 1)
+		spellHandle.frameHandle.cooldown:SetText("Cooldown")
 	end
 
 	spellHandle.castTime = GetTime()
 	spellHandle.readyTime = GetTime() + cooldown
 	spellHandle.cooldownTimer = RCT:ScheduleTimer("HandlePlayerSpellCastCooldownEnd", cooldown, spellHandle)
-
+	
 	-- TEMP
 	do
 		local playerHandle = spellHandle.playerHandle
@@ -283,6 +429,9 @@ function RCT:HandlePlayerSpellCastActiveEnd(spellHandle)
 	local playerHandle = spellHandle.playerHandle
 	local spellInfo = RCT:GetSpellInfo(spellHandle)
 
+	spellHandle.frameHandle.cooldown:SetTextColor(1, 0, 0, 1)
+	spellHandle.frameHandle.cooldown:SetText("Cooldown")
+
 	print(spellInfo.name .. " is no longer active for " .. playerHandle.info.name)
 end
 
@@ -290,6 +439,9 @@ end
 function RCT:HandlePlayerSpellCastCooldownEnd(spellHandle)
 	local playerHandle = spellHandle.playerHandle
 	local spellInfo = RCT:GetSpellInfo(spellHandle)
+
+	spellHandle.frameHandle.cooldown:SetTextColor(0, 1, 0, 1)
+	spellHandle.frameHandle.cooldown:SetText("Ready")
 
 	print(spellInfo.name .. " is off cooldown for " .. playerHandle.info.name)
 end
@@ -359,11 +511,24 @@ end
 
 function RCT:OnUnitUpdated(evt, guid, unitId, info)
 	if not RCT:HasPlayerHandle(guid) then
-		RCT:CreatePlayerHandle(guid, info)
+		if RCT.__debugMode then
+			for i=1, 4 do
+				RCT:CreatePlayerHandle(guid .. i, info)
+			end
+		else
+			RCT:CreatePlayerHandle(guid, info)
+		end
 	end
 
-	local playerHandle = RCT:GetPlayerHandle(guid)
-	RCT:UpdatePlayerHandle(playerHandle, info)
+	if RCT.__debugMode then
+		for i=1, 4 do
+			local playerHandle = RCT:GetPlayerHandle(guid .. i)
+			RCT:UpdatePlayerHandle(playerHandle, info)
+		end
+	else
+		local playerHandle = RCT:GetPlayerHandle(guid)
+		RCT:UpdatePlayerHandle(playerHandle, info)
+	end
 end
 
 function RCT:OnUnitRemoved(evt, guid)
