@@ -87,74 +87,75 @@ RCT.spellDB = {
 					cooldown	= function(playerHandle, spell) if RCT:PlayerHasTalentSelected(playerHandle, 2, 2) then return spell.cooldown * 0.7 else return spell.cooldown end end
 				}
 			},
-			[1022] = {		-- Blessing of Protection
-				name		= "Blessing of Protection",
-				spellId		= 1022,
-				cooldown	= 255,
-				duration	= 10,
-				level		= 48,
-				resetOnWipe	= true
-			},
-			[6940] = {		-- Blessing of Sacrifice
-				name		= "Blessing of Sacrifice",
-				spellId		= 6940,
-				cooldown	= 204,
-				duration	= 12,
-				level		= 56
-			},
-			[642] = {		-- Divine Shield
-				name		= "Divine Shield",
-				spellId 	= 642,
-				cooldown 	= 300,
-				duration 	= 8,
-				level		= 18,
-				resetOnWipe	= true,
-				modifiers	= {
-					-- Unbreakable Spirit talent - Reduce cooldown by 30%
-					cooldown	= function(playerHandle, spell) if RCT:PlayerHasTalentSelected(playerHandle, 2, 2) then return spell.cooldown * 0.7 else return spell.cooldown end end
-				}
-			},
+			-- [1022] = {		-- Blessing of Protection
+			-- 	name		= "Blessing of Protection",
+			-- 	spellId		= 1022,
+			-- 	cooldown	= 255,
+			-- 	duration	= 10,
+			-- 	level		= 48,
+			-- 	resetOnWipe	= true
+			-- },
+			-- [6940] = {		-- Blessing of Sacrifice
+			-- 	name		= "Blessing of Sacrifice",
+			-- 	spellId		= 6940,
+			-- 	cooldown	= 204,
+			-- 	duration	= 12,
+			-- 	level		= 56,
+			-- 	resetOnWipe	= true
+			-- },
+			-- [642] = {		-- Divine Shield
+			-- 	name		= "Divine Shield",
+			-- 	spellId 	= 642,
+			-- 	cooldown 	= 300,
+			-- 	duration 	= 8,
+			-- 	level		= 18,
+			-- 	resetOnWipe	= true,
+			-- 	modifiers	= {
+			-- 		-- Unbreakable Spirit talent - Reduce cooldown by 30%
+			-- 		cooldown	= function(playerHandle, spell) if RCT:PlayerHasTalentSelected(playerHandle, 2, 2) then return spell.cooldown * 0.7 else return spell.cooldown end end
+			-- 	}
+			-- },
 		},
 		[RCT.specs.Paladin.Protection] = {
-			[31850] = {		-- Ardent Defender
-				name		= "Ardent Defender",
-				spellId 	= 31850,
-				cooldown 	= 90,
-				duration 	= 8,
-				level		= 50
-			},
-			[204018] = {	-- Blessing of Spellwarding
-				name		= "Blessing of Spellwarding",
-				spellId 	= 204018,
-				cooldown 	= 180,
-				duration 	= 10,
-				level		= 60,
-				talents		= { { tier=4, column=1 } }
-			},
-			[1022] = {		-- Blessing of Protection
-				name		= "Blessing of Protection",
-				spellId 	= 1022,
-				cooldown 	= 300,
-				duration 	= 10,
-				level		= 48,
-				resetOnWipe	= true,
-				talents		= { { tier=4, column=2 }, { tier=4, column=3 } }
-			},
-			[6940] = {		-- Blessing of Sacrifice
-				name		= "Blessing of Sacrifice",
-				spellId 	= 6940,
-				cooldown 	= 90,
-				duration 	= 12,
-				level		= 56
-			},
-			[642] = {		-- Divine Shield
-				name		= "Divine Shield",
-				spellId 	= 642,
-				cooldown 	= 300,
-				duration 	= 8,
-				level		= 18,
-				resetOnWipe	= true
-			},
+			-- [31850] = {		-- Ardent Defender
+			-- 	name		= "Ardent Defender",
+			-- 	spellId 	= 31850,
+			-- 	cooldown 	= 90,
+			-- 	duration 	= 8,
+			-- 	level		= 50
+			-- },
+			-- [204018] = {	-- Blessing of Spellwarding
+			-- 	name		= "Blessing of Spellwarding",
+			-- 	spellId 	= 204018,
+			-- 	cooldown 	= 180,
+			-- 	duration 	= 10,
+			-- 	level		= 60,
+			-- 	talents		= { { tier=4, column=1 } }
+			-- },
+			-- [1022] = {		-- Blessing of Protection
+			-- 	name		= "Blessing of Protection",
+			-- 	spellId 	= 1022,
+			-- 	cooldown 	= 300,
+			-- 	duration 	= 10,
+			-- 	level		= 48,
+			-- 	resetOnWipe	= true,
+			-- 	talents		= { { tier=4, column=2 }, { tier=4, column=3 } }
+			-- },
+			-- [6940] = {		-- Blessing of Sacrifice
+			-- 	name		= "Blessing of Sacrifice",
+			-- 	spellId 	= 6940,
+			-- 	cooldown 	= 90,
+			-- 	duration 	= 12,
+			-- 	level		= 56
+			-- },
+			-- [642] = {		-- Divine Shield
+			-- 	name		= "Divine Shield",
+			-- 	spellId 	= 642,
+			-- 	cooldown 	= 300,
+			-- 	duration 	= 8,
+			-- 	level		= 18,
+			-- 	resetOnWipe	= true
+			-- },
 			[633] = {		-- Lay on Hands
 				name		= "Lay on Hands",
 				spellId 	= 633,
@@ -162,35 +163,35 @@ RCT.spellDB = {
 				level		= 55,
 				resetOnWipe	= true
 			},
-			[212641] = {	-- Guardian of Ancient Kings
-				name		= "Guardian of Ancient Kings",
-				spellId 	= 212641,
-				cooldown 	= 300,
-				duration	= 8,
-				level		= 72,
-				resetOnWipe	= true
-			}
+			-- [212641] = {	-- Guardian of Ancient Kings
+			-- 	name		= "Guardian of Ancient Kings",
+			-- 	spellId 	= 212641,
+			-- 	cooldown 	= 300,
+			-- 	duration	= 8,
+			-- 	level		= 72,
+			-- 	resetOnWipe	= true
+			-- }
 		},
 		[RCT.specs.Paladin.Retribution] = {
-			[642] = {		-- Divine Shield
-				name		= "Divine Shield",
-				spellId 	= 642,
-				cooldown 	= 300,
-				duration 	= 8,
-				level		= 18,
-				resetOnWipe	= true,
-				modifiers	= {
-					cooldown	= function(playerHandle, spell) if RCT:PlayerHasTalentSelected(playerHandle, 6, 1) then return spell.cooldown * 0.8 else return spell.cooldown end end
-				}
-			},
-			[1022] = {		-- Blessing of Protection
-				name		= "Blessing of Protection",
-				spellId 	= 1022,
-				cooldown 	= 210,
-				duration 	= 10,
-				level		= 48,
-				resetOnWipe	= true
-			},
+			-- [642] = {		-- Divine Shield
+			-- 	name		= "Divine Shield",
+			-- 	spellId 	= 642,
+			-- 	cooldown 	= 300,
+			-- 	duration 	= 8,
+			-- 	level		= 18,
+			-- 	resetOnWipe	= true,
+			-- 	modifiers	= {
+			-- 		cooldown	= function(playerHandle, spell) if RCT:PlayerHasTalentSelected(playerHandle, 6, 1) then return spell.cooldown * 0.8 else return spell.cooldown end end
+			-- 	}
+			-- },
+			-- [1022] = {		-- Blessing of Protection
+			-- 	name		= "Blessing of Protection",
+			-- 	spellId 	= 1022,
+			-- 	cooldown 	= 210,
+			-- 	duration 	= 10,
+			-- 	level		= 48,
+			-- 	resetOnWipe	= true
+			-- },
 			[633] = {		-- Lay on Hands
 				name		= "Lay on Hands",
 				spellId 	= 633,
@@ -363,6 +364,21 @@ RCT.spellDB = {
 		[RCT.specs.Shaman.Enhancement] = {
 		},
 		[RCT.specs.Shaman.Restoration] = {
+			[108280] = {	-- Healing Tide Totem
+				name		= "Healing Tide Totem",
+				spellId 	= 108280,
+				cooldown 	= 180,
+				duration 	= 10,
+				level		= 80,
+				resetOnWipe	= true
+			},
+			[98008] = {		-- Spirit Link Totem
+				name		= "Spirit Link Totem",
+				spellId 	= 98008,
+				cooldown 	= 120,
+				duration 	= 6,
+				level		= 56
+			}
 		}
 	},
 	[RCT.classes.Warlock] = {
