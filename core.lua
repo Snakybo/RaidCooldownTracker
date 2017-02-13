@@ -273,7 +273,7 @@ end
 
 function RCT:CreatePlayerFrameHandle()
 	-- temp
-	RCT.frame:SetPoint("CENTER", 0, 0)
+	RCT.frame:SetPoint("CENTER", 400, 0)
 	RCT.frame:SetWidth(200)
 	RCT.frame:SetHeight(500)
 	--RCT.frame:SetFrameStrata("LOW")
@@ -375,8 +375,13 @@ function RCT:RearrangeFrameList()
 				nextY = nextY + spellFrameHandle.frame:GetHeight()
 			end
 
-			lastFrameHandle = frameHandle
-			lastFrameHandleHeight = nextY
+			if nextY > frameHandle.frame:GetHeight() then
+				frameHandle.frame:Show()
+				lastFrameHandle = frameHandle
+				lastFrameHandleHeight = nextY
+			else
+				frameHandle.frame:Hide()
+			end
 		end
 	end
 end
@@ -390,29 +395,22 @@ function RCT:HandlePlayerSpellCast(spellHandle)
 	local duration = RCT:GetSpellDuration(spellHandle)
 	local cooldown = RCT:GetSpellCooldown(spellHandle)
 
+	spellHandle.castTime = GetTime()
+	spellHandle.readyTime = GetTime() + cooldown
+
 	if duration > 0 then
 		spellHandle.activeStart = GetTime()
 		spellHandle.activeEnd = GetTime() + duration
+		spellHandle.activeTimerRepeating = RCT:ScheduleRepeatingTimer("HandlePlayerSpellCastActiveTimer", 0.5, spellHandle)
 		spellHandle.activeTimer = RCT:ScheduleTimer("HandlePlayerSpellCastActiveEnd", duration, spellHandle)
 
-		spellHandle.frameHandle.cooldown:SetTextColor(1, 1, 0, 1)
-		spellHandle.frameHandle.cooldown:SetText("Active")
+		RCT:UpdatePlayerCooldownText(spellHandle, spellHandle.activeEnd - GetTime(), 1, 1, 0)
 	else
-		spellHandle.frameHandle.cooldown:SetTextColor(1, 0, 0, 1)
-		spellHandle.frameHandle.cooldown:SetText("Cooldown")
+		spellHandle.cooldownTimerRepeating = RCT:ScheduleRepeatingTimer("HandlePlayerSpellCastCooldownTimer", 0.5, spellHandle)
+		RCT:UpdatePlayerCooldownText(spellHandle, spellHandle.readyTime - GetTime(), 1, 0, 0)
 	end
 
-	spellHandle.castTime = GetTime()
-	spellHandle.readyTime = GetTime() + cooldown
 	spellHandle.cooldownTimer = RCT:ScheduleTimer("HandlePlayerSpellCastCooldownEnd", cooldown, spellHandle)
-	
-	-- TEMP
-	do
-		local playerHandle = spellHandle.playerHandle
-		local spellInfo = RCT:GetSpellInfo(spellHandle)
-
-		print(playerHandle.info.name .. " cast spell: " .. spellInfo.name .. " (Duration=" .. duration .. " Cooldown=" .. cooldown .. ")")
-	end
 end
 
 function RCT:ResetSpellStatus(spellHandle)
@@ -425,14 +423,29 @@ function RCT:ResetSpellStatus(spellHandle)
 end
 
 -- TEMP
+function RCT:HandlePlayerSpellCastActiveTimer(spellHandle)
+	local playerHandle = spellHandle.playerHandle
+	local spellInfo = RCT:GetSpellInfo(spellHandle)
+
+	RCT:UpdatePlayerCooldownText(spellHandle, spellHandle.activeEnd - GetTime(), 1, 1, 0)
+end
+
+-- TEMP
 function RCT:HandlePlayerSpellCastActiveEnd(spellHandle)
 	local playerHandle = spellHandle.playerHandle
 	local spellInfo = RCT:GetSpellInfo(spellHandle)
 
-	spellHandle.frameHandle.cooldown:SetTextColor(1, 0, 0, 1)
-	spellHandle.frameHandle.cooldown:SetText("Cooldown")
+	RCT:CancelTimer(spellHandle.activeTimerRepeating)
+	spellHandle.cooldownTimerRepeating = RCT:ScheduleRepeatingTimer("HandlePlayerSpellCastCooldownTimer", 0.5, spellHandle)
+	RCT:UpdatePlayerCooldownText(spellHandle, spellHandle.readyTime - GetTime(), 1, 0, 0)
+end
 
-	print(spellInfo.name .. " is no longer active for " .. playerHandle.info.name)
+-- TEMP
+function RCT:HandlePlayerSpellCastCooldownTimer(spellHandle)
+	local playerHandle = spellHandle.playerHandle
+	local spellInfo = RCT:GetSpellInfo(spellHandle)
+
+	RCT:UpdatePlayerCooldownText(spellHandle, spellHandle.readyTime - GetTime(), 1, 0, 0)
 end
 
 -- TEMP
@@ -443,7 +456,15 @@ function RCT:HandlePlayerSpellCastCooldownEnd(spellHandle)
 	spellHandle.frameHandle.cooldown:SetTextColor(0, 1, 0, 1)
 	spellHandle.frameHandle.cooldown:SetText("Ready")
 
-	print(spellInfo.name .. " is off cooldown for " .. playerHandle.info.name)
+	RCT:CancelTimer(spellHandle.cooldownTimerRepeating)
+end
+
+function RCT:UpdatePlayerCooldownText(spellHandle, timeRemaining, r, g, b)
+	local minutes = math.floor(timeRemaining / 60)
+	local seconds = math.floor(timeRemaining % 60)
+
+	spellHandle.frameHandle.cooldown:SetTextColor(r, g, b, 1)
+	spellHandle.frameHandle.cooldown:SetText(string.format("%02d:%02d", minutes, seconds))
 end
 
 --[[ LibStub callbacks & event callbacks ]]--
