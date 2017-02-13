@@ -181,8 +181,6 @@ function RCT:CreateSpellHandle(playerHandle, spellId)
 	spell.activeStart = 0
 	spell.activeEnd	= 0
 	spell.readyTime	= 0
-	spell.activeTimer = nil
-	spell.cooldownTimer = nil
 
 	playerHandle.spells[spellId] = spell
 	RCT:InitialzeSpellFrameHandle(spell)
@@ -194,9 +192,6 @@ function RCT:DestroySpellHandle(spellHandle)
 	if spellHandle == nil then
 		return
 	end
-
-	RCT:CancelTimer(spellHandle.activeTimer)
-	RCT:CancelTimer(spellHandle.cooldownTimer)
 
 	spellHandle.playerHandle.spells[spellHandle.spellId] = nil
 end
@@ -401,70 +396,40 @@ function RCT:HandlePlayerSpellCast(spellHandle)
 	if duration > 0 then
 		spellHandle.activeStart = GetTime()
 		spellHandle.activeEnd = GetTime() + duration
-		spellHandle.activeTimerRepeating = RCT:ScheduleRepeatingTimer("HandlePlayerSpellCastActiveTimer", 0.5, spellHandle)
-		spellHandle.activeTimer = RCT:ScheduleTimer("HandlePlayerSpellCastActiveEnd", duration, spellHandle)
-
-		RCT:UpdatePlayerCooldownText(spellHandle, spellHandle.activeEnd - GetTime(), 1, 1, 0)
-	else
-		spellHandle.cooldownTimerRepeating = RCT:ScheduleRepeatingTimer("HandlePlayerSpellCastCooldownTimer", 0.5, spellHandle)
-		RCT:UpdatePlayerCooldownText(spellHandle, spellHandle.readyTime - GetTime(), 1, 0, 0)
 	end
-
-	spellHandle.cooldownTimer = RCT:ScheduleTimer("HandlePlayerSpellCastCooldownEnd", cooldown, spellHandle)
 end
 
 function RCT:ResetSpellStatus(spellHandle)
 	spellHandle.activeStart = 0
 	spellHandle.activeEnd = 0
 	spellHandle.readyTime = 0
-
-	RCT:CancelTimer(spellHandle.activeTimer)
-	RCT:CancelTimer(spellHandle.cooldownTimer)
 end
 
 -- TEMP
-function RCT:HandlePlayerSpellCastActiveTimer(spellHandle)
-	local playerHandle = spellHandle.playerHandle
-	local spellInfo = RCT:GetSpellInfo(spellHandle)
+function RCT:HandlePlayerSpellCastText()
+	local currentTime = GetTime()
 
-	RCT:UpdatePlayerCooldownText(spellHandle, spellHandle.activeEnd - GetTime(), 1, 1, 0)
+	for _, playerHandle in pairs(RCT.trackedPlayers) do
+		for _, spellHandle in pairs(playerHandle.spells) do
+			if spellHandle.activeEnd > currentTime then
+				spellHandle.frameHandle.cooldown:SetTextColor(1, 1, 0, 1)
+				spellHandle.frameHandle.cooldown:SetText(RCT:GetFormattedTimeString(spellHandle.activeEnd - currentTime))
+			elseif spellHandle.readyTime > currentTime then
+				spellHandle.frameHandle.cooldown:SetTextColor(1, 0, 0, 1)
+				spellHandle.frameHandle.cooldown:SetText(RCT:GetFormattedTimeString(spellHandle.readyTime - currentTime))
+			else
+				spellHandle.frameHandle.cooldown:SetTextColor(0, 1, 0, 1)
+				spellHandle.frameHandle.cooldown:SetText("Ready")
+			end
+		end
+	end
 end
 
--- TEMP
-function RCT:HandlePlayerSpellCastActiveEnd(spellHandle)
-	local playerHandle = spellHandle.playerHandle
-	local spellInfo = RCT:GetSpellInfo(spellHandle)
+function RCT:GetFormattedTimeString(totalSeconds)
+	local minutes = math.floor(totalSeconds / 60)
+	local seconds = math.floor(totalSeconds % 60)
 
-	RCT:CancelTimer(spellHandle.activeTimerRepeating)
-	spellHandle.cooldownTimerRepeating = RCT:ScheduleRepeatingTimer("HandlePlayerSpellCastCooldownTimer", 0.5, spellHandle)
-	RCT:UpdatePlayerCooldownText(spellHandle, spellHandle.readyTime - GetTime(), 1, 0, 0)
-end
-
--- TEMP
-function RCT:HandlePlayerSpellCastCooldownTimer(spellHandle)
-	local playerHandle = spellHandle.playerHandle
-	local spellInfo = RCT:GetSpellInfo(spellHandle)
-
-	RCT:UpdatePlayerCooldownText(spellHandle, spellHandle.readyTime - GetTime(), 1, 0, 0)
-end
-
--- TEMP
-function RCT:HandlePlayerSpellCastCooldownEnd(spellHandle)
-	local playerHandle = spellHandle.playerHandle
-	local spellInfo = RCT:GetSpellInfo(spellHandle)
-
-	spellHandle.frameHandle.cooldown:SetTextColor(0, 1, 0, 1)
-	spellHandle.frameHandle.cooldown:SetText("Ready")
-
-	RCT:CancelTimer(spellHandle.cooldownTimerRepeating)
-end
-
-function RCT:UpdatePlayerCooldownText(spellHandle, timeRemaining, r, g, b)
-	local minutes = math.floor(timeRemaining / 60)
-	local seconds = math.floor(timeRemaining % 60)
-
-	spellHandle.frameHandle.cooldown:SetTextColor(r, g, b, 1)
-	spellHandle.frameHandle.cooldown:SetText(string.format("%02d:%02d", minutes, seconds))
+	return string.format("%02d:%02d", minutes, seconds)
 end
 
 --[[ LibStub callbacks & event callbacks ]]--
@@ -526,6 +491,8 @@ function RCT:OnInitialize()
 	RCT:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
 
 	RCT:RegisterChatCommand("RCT", "SlashProcessor")
+
+	RCT:ScheduleRepeatingTimer("HandlePlayerSpellCastText", 1)
 end
 
 --[[ LibGroupInSpecT callbacks ]]--
