@@ -14,7 +14,7 @@ RCT.trackedPlayers = { }
 local availablePlayerFrames = { }
 local numPlayerFrames = 0
 
-local availableSpellFramess = { }
+local availableSpellFrames = { }
 local numSpellFrames = 0
 
 --[[ Player Handle ]]--
@@ -50,6 +50,9 @@ function RCT:DestroyPlayerHandle(playerHandle)
 		RCT:DestroySpellHandle(spellHandle)
 	end
 
+	playerHandle.frameHandle.frame:Hide()
+	table.insert(availablePlayerFrames, playerHandle.frameHandle)
+
 	RCT.trackedPlayers[playerHandle.guid] = nil
 end
 
@@ -58,6 +61,7 @@ function RCT:UpdatePlayerHandle(playerHandle, info)
 
 	if playerHandle.cache.global_spec_id ~= info.global_spec_id then
 		RCT:HandlePlayerSpecSwitch(playerHandle, info)
+		RCT:RearrangeFrameList()
 	else
 		local shouldUpdate = false
 
@@ -85,6 +89,17 @@ function RCT:UpdatePlayerHandle(playerHandle, info)
 
 		if shouldUpdate then
 			RCT:HandlePlayerLevelUpOrTalentSwitch(playerHandle, info)
+			RCT:RearrangeFrameList()
+		end
+	end
+
+	if playerHandle.frameHandle == nil then
+		RCT:InitializePlayerFrameHandle(playerHandle)
+
+		if playerHandle.frameHandle ~= nil then
+			for _, spellHandle in pairs(playerHandle.spells) do
+				RCT:InitializeSpellFrameHandle(spellHandle)
+			end
 		end
 	end
 end
@@ -125,7 +140,7 @@ function RCT:HandlePlayerLevelUpOrTalentSwitch(playerHandle, info)
 
 	playerHandle.cache.talents = RCT:CacheTalents(info.talents)
 	playerHandle.level = UnitLevel(info.lku)
-
+	
 	for _, spellHandle in pairs(playerHandle.spells) do
 		local spellInfo = RCT:GetSpellInfo(spellHandle)
 		local castable = false
@@ -176,14 +191,14 @@ function RCT:CreateSpellHandle(playerHandle, spellId)
 	local spell = { }
 	spell.playerHandle = playerHandle
 	spell.spellId = spellId
-	spell.castable = false
+	spell.castable = true
 	spell.frameHandle = nil
 	spell.activeStart = 0
 	spell.activeEnd	= 0
 	spell.readyTime	= 0
 
 	playerHandle.spells[spellId] = spell
-	RCT:InitialzeSpellFrameHandle(spell)
+	RCT:InitializeSpellFrameHandle(spell)
 
 	return spell
 end
@@ -192,6 +207,9 @@ function RCT:DestroySpellHandle(spellHandle)
 	if spellHandle == nil then
 		return
 	end
+
+	spellHandle.frameHandle.frame:Hide()
+	table.insert(availableSpellFrames, spellHandle.frameHandle)
 
 	spellHandle.playerHandle.spells[spellHandle.spellId] = nil
 end
@@ -253,7 +271,20 @@ end
 --[[ Frame ]]--
 
 function RCT:InitializePlayerFrameHandle(playerHandle)
-	local frameHandle = RCT:CreatePlayerFrameHandle()
+	if playerHandle.info == nil or playerHandle.info.class == nil then
+		return
+	end
+
+	local frameHandle
+	if #availablePlayerFrames > 0 then
+		frameHandle = availablePlayerFrames[1]
+		frameHandle.frame:Show()
+
+		table.remove(availablePlayerFrames, 1)
+	else
+		frameHandle = RCT:CreatePlayerFrameHandle()
+	end
+
 	local classColor = RAID_CLASS_COLORS[playerHandle.info.class]
 	frameHandle.playerName:SetText(playerHandle.info.name)
 	frameHandle.playerName:SetTextColor(classColor.r, classColor.g, classColor.b, 1)
@@ -294,11 +325,21 @@ function RCT:CreatePlayerFrameHandle()
 	return frameHandle
 end
 
-function RCT:InitialzeSpellFrameHandle(spellHandle)
-	local spellInfo = RCT:GetSpellInfo(spellHandle)
+function RCT:InitializeSpellFrameHandle(spellHandle)
+	if spellHandle.playerHandle.frameHandle == nil then
+		return
+	end
 
-	local frameHandle = RCT:CreateSpellFrameHandle()
-	local playerFrameHandle = spellHandle.playerHandle.frameHandle
+	local spellInfo = RCT:GetSpellInfo(spellHandle)
+	local frameHandle
+	if #availableSpellFrames > 0 then
+		frameHandle = availableSpellFrames[1]
+		frameHandle.frame:Show()
+
+		table.remove(availableSpellFrames, 1)
+	else
+		frameHandle = RCT:CreateSpellFrameHandle()
+	end
 	
 	frameHandle.icon:SetTexture(select(3, GetSpellInfo(spellInfo.spellId)))
 	frameHandle.spellName:SetText(spellInfo.name)
@@ -366,8 +407,10 @@ function RCT:RearrangeFrameList()
 			for _, spellHandle in pairs(playerHandle.spells) do
 				local spellFrameHandle = spellHandle.frameHandle
 
-				spellFrameHandle.frame:SetPoint("TOPLEFT", frameHandle.frame, "TOPLEFT", 0, -nextY)
-				nextY = nextY + spellFrameHandle.frame:GetHeight()
+				if spellFrameHandle ~= nil then
+					spellFrameHandle.frame:SetPoint("TOPLEFT", frameHandle.frame, "TOPLEFT", 0, -nextY)
+					nextY = nextY + spellFrameHandle.frame:GetHeight()
+				end
 			end
 
 			if nextY > frameHandle.frame:GetHeight() then
@@ -411,15 +454,17 @@ function RCT:HandlePlayerSpellCastText()
 
 	for _, playerHandle in pairs(RCT.trackedPlayers) do
 		for _, spellHandle in pairs(playerHandle.spells) do
-			if spellHandle.activeEnd > currentTime then
-				spellHandle.frameHandle.cooldown:SetTextColor(1, 1, 0, 1)
-				spellHandle.frameHandle.cooldown:SetText(RCT:GetFormattedTimeString(spellHandle.activeEnd - currentTime))
-			elseif spellHandle.readyTime > currentTime then
-				spellHandle.frameHandle.cooldown:SetTextColor(1, 0, 0, 1)
-				spellHandle.frameHandle.cooldown:SetText(RCT:GetFormattedTimeString(spellHandle.readyTime - currentTime))
-			else
-				spellHandle.frameHandle.cooldown:SetTextColor(0, 1, 0, 1)
-				spellHandle.frameHandle.cooldown:SetText("Ready")
+			if spellHandle.frameHandle ~= nil then
+				if spellHandle.activeEnd > currentTime then
+					spellHandle.frameHandle.cooldown:SetTextColor(1, 1, 0, 1)
+					spellHandle.frameHandle.cooldown:SetText(RCT:GetFormattedTimeString(spellHandle.activeEnd - currentTime))
+				elseif spellHandle.readyTime > currentTime then
+					spellHandle.frameHandle.cooldown:SetTextColor(1, 0, 0, 1)
+					spellHandle.frameHandle.cooldown:SetText(RCT:GetFormattedTimeString(spellHandle.readyTime - currentTime))
+				else
+					spellHandle.frameHandle.cooldown:SetTextColor(0, 1, 0, 1)
+					spellHandle.frameHandle.cooldown:SetText("Ready")
+				end
 			end
 		end
 	end
@@ -523,6 +568,7 @@ function RCT:OnUnitRemoved(evt, guid)
 	if RCT:HasPlayerHandle(guid) then
 		local playerHandle = RCT:GetPlayerHandle(guid)
 		RCT:DestroyPlayerHandle(playerHandle)
+		RCT:RearrangeFrameList()
 	end
 end
 
