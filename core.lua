@@ -7,7 +7,9 @@ local LGIST = LibStub("LibGroupInSpecT-1.1")
 local AceDB = LibStub("AceDB-3.0")
 
 RCT.players = { }
+
 RCT.frameManager = nil
+RCT.database = nil
 
 --[[ Player class ]]--
 
@@ -99,9 +101,9 @@ function RCT.Player:Reload()
 	local availableSpells = RCT.spellDB[self.class][self.spec]
 	local newSpells = { }
 
-	-- Remove uncastable spells
+	-- Remove uncastable and hidden spells
 	for spellId, _ in pairs(availableSpells) do
-		if RCT:CanPlayerCastSpell(self, spellId) then
+		if RCT:CanPlayerCastSpell(self, spellId) and RCT.database:IsSpellVisible(self.class, self.spec, spellId) then
 			table.insert(newSpells, spellId)
 		end
 	end
@@ -398,12 +400,129 @@ function RCT.FrameManager:SetStyle(style)
 	end
 end
 
+--[[ Database class ]]--
+
+RCT.Database = { }
+RCT.Database.__index = RCT.Database
+
+setmetatable(RCT.Database, {
+	__call = function(cls, ...)
+		local self = setmetatable({}, cls)
+		self:new(...)
+		return self
+	end,
+})
+
+function RCT.Database:new()
+	self.db = LibStub("AceDB-3.0"):New("RaidCooldownTrackerDB", self:GetDefaults(), true)
+	self.db.RegisterCallback(self, "OnProfileChanged", "Reload")
+	self.db.RegisterCallback(self, "OnProfileCopied", "Reload")
+	self.db.RegisterCallback(self, "OnProfileReset", "Reload")
+end
+
+function RCT.Database:OnEnable()
+	for className, class in pairs(RCT.spellDB) do
+		for specName, spec in pairs(class) do
+			for spellId, spell in pairs(spec) do
+				local key = className .. "/" .. specName .. "/" .. spellId
+				local data = self.db.profile.spellProperties[key]
+				
+				RCT:InjectSpellProperty(className, specName, spellId, "visible", data["visible"])
+			end
+		end
+	end
+end
+
+function RCT.Database:Reload()
+	print("TODO: Database reload")
+end
+
+function RCT.Database:SetSpellVisible(class, spec, spellId, visible)
+	if self:IsSpellVisible(class, spec, spellId) == visible then
+		return
+	end
+
+	if visible ~= 0 and visible ~= 1 then
+		return
+	end
+
+	self:SetSpellProperty(class, spec, spellId, "visible", visible)
+
+	-- Start tracking the spell
+	if visible == 1 then
+		for _, player in pairs(RCT.players) do
+			player:AddSpell(spellId)
+		end
+	-- Stop tracking the spell
+	else
+		for _, player in pairs(RCT.players) do
+			player:RemoveSpell(spellId)
+		end
+	end
+end
+
+function RCT.Database:SetSpellVisibleGlobal(spellId, visible)
+	for className, class in pairs(RCT.spellDB) do
+		for specName, spec in pairs(class) do
+			for id, spell in pairs(spec) do
+				if id == spellId then
+					self:SetSpellVisible(className, specName, spellId, visible)
+				end
+			end
+		end
+	end
+end
+
+function RCT.Database:SetSpellProperty(class, spec, spellId, property, value)
+	local key = class .. "/" .. spec .. "/" .. spellId
+	local data = self.db.profile.spellProperties[key]
+
+	data[property] = value
+	RCT:InjectSpellProperty(class, spec, spellId, property, value)
+end
+
+function RCT.Database:GetSpellProperty(class, spec, spellId, property)
+	local key = class .. "/" .. spec .. "/" .. spellId
+	local data = self.db.profile.spellProperties[key]
+
+	return data[property]
+end
+
+function RCT.Database:GetDefaults()
+	if self.defaults ~= nil then
+		return self.defaults
+	end
+
+	self.defaults = {
+		profile = { 
+			spellProperties = {
+				['*'] = {
+					visible = 1
+				}
+			}
+		}
+	}
+
+	return self.defaults
+end
+
+function RCT.Database:IsSpellVisible(class, spec, spellId)
+	return self:GetSpellProperty(class, spec, spellId, "visible") == 1
+end
+
 --[[ Initialization ]]--
 
 function RCT:OnInitialize()
-	RCT:InitializeSpells()
+	RCT:InitializeSpellInfos()
+
+	RCT.database = RCT.Database()
+
 	RCT.frameManager = RCT.FrameManager()
 	RCT.frameManager:SetStyle(RCT.FrameStyleCompactList)
+end
+
+function RCT:OnEnable()
+	RCT.database:OnEnable()
 
 	LGIST.RegisterCallback(self, "GroupInSpecT_Update", "OnUnitUpdated")
 	LGIST.RegisterCallback(self, "GroupInSpecT_Remove", "OnUnitRemoved")
@@ -416,15 +535,15 @@ function RCT:OnInitialize()
 	RCT:ScheduleRepeatingTimer("UpdateFrames", 1)
 end
 
-function RCT:InitializeSpells()
+function RCT:InitializeSpellInfos()
 	for className, class in pairs(RCT.spellDB) do
 		for specName, spec in pairs(class) do
 			for spellId, spell in pairs(spec) do
 				local name, _, icon = GetSpellInfo(spellId)
 				
-				spell.name = name
-				spell.icon = icon
-				spell.spellId = spellId
+				RCT:InjectSpellProperty(className, specName, spellId, "spellId", spellId)
+				RCT:InjectSpellProperty(className, specName, spellId, "name", name)
+				RCT:InjectSpellProperty(className, specName, spellId, "icon", icon)
 			end
 		end
 	end
@@ -485,11 +604,33 @@ function RCT:COMBAT_LOG_EVENT_UNFILTERED(evt, ...)
 	end
 end
 
+function RCT:SlashProcessor(input)
+	local parts = { }
+
+	for part in string.gmatch(input, "%S+") do
+		table.insert(parts, part)
+	end
+
+	if parts[1] == "setvisible" then
+		RCT.database:SetSpellVisible(parts[2], tonumber(parts[3]), tonumber(parts[4]), tonumber(parts[5]))
+	elseif parts[1] == "setvisibleglobal" then
+		RCT.database:SetSpellVisibleGlobal(tonumber(parts[2]), tonumber(parts[3]))
+	end
+end
+
 function RCT:UpdateFrames()
 	RCT.frameManager:Update()
 end
 
 --[[ Helper functions ]]--
+
+function RCT:InjectSpellProperty(class, spec, spellId, key, value)
+	local spell = RCT.spellDB[class][spec][spellId]
+
+	if spell ~= nil then
+		spell[key] = value
+	end
+end
 
 function RCT:GetPlayerByGUID(guid)
 	return RCT.players[guid]

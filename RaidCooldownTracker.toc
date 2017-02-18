@@ -3,6 +3,7 @@
 ## Author: Snakybo
 ## Version 1.0
 ## Notes: Cooldown tracker for raid groups
+## SavedVariables: RaidCooldownTrackerDB
 
 init.lua
 spell_list.lua
