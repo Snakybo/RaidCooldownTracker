@@ -6,246 +6,235 @@ local RCT = RCT
 local LGIST = LibStub("LibGroupInSpecT-1.1")
 local AceDB = LibStub("AceDB-3.0")
 
-RCT.trackedPlayers = { }
---RCT.__debugMode = true
+RCT.players = { }
+RCT.frameManager = nil
 
--- Local variables
+--[[ Player class ]]--
 
-local availablePlayerFrames = { }
-local numPlayerFrames = 0
+RCT.Player = { }
+RCT.Player.__index = RCT.Player
 
-local availableSpellFrames = { }
-local numSpellFrames = 0
+setmetatable(RCT.Player, {
+	__call = function(cls, ...)
+		local self = setmetatable({}, cls)
+		self:new(...)
+		return self
+	end,
+})
 
---[[ Player Handle ]]--
+function RCT.Player:new(guid, info)
+	self.guid = guid
+	self.name = info.name
+	self.unit = info.lku
+	self.class = info.class
+	self.spec = info.global_spec_id
+	self.level = UnitLevel(info.lku)
+	self.initialized = false
+	self.talents = RCT:ConstructTalentTable(info.talents)
+	self.spells = { }
 
-function RCT:CreatePlayerHandle(guid, info)
-	if RCT:HasPlayerHandle(guid) then
-		return nil
-	end
-
-	local player = { }
-	player.guid = guid
-	player.info = info
-	player.dead = false
-	player.frameHandle = nil
-	player.cache = {}
-	player.cache.global_spec_id = 0
-	player.cache.level = 0
-	player.cache.talents = nil
-	player.spells = { }
-
-	RCT.trackedPlayers[guid] = player
-	RCT:InitializePlayerFrameHandle(player)
-	
-	return player
+	RCT.players[guid] = self
+	RCT.frameManager:OnPlayerAdded(self)
 end
 
-function RCT:DestroyPlayerHandle(playerHandle)
-	if playerHandle == nil then
-		return
+function RCT.Player:Destroy()
+	for _, spell in pairs(self.spells) do
+		spell:Destroy()
 	end
 
-	for _, spellHandle in pairs(playerHandle.spells) do
-		RCT:DestroySpellHandle(spellHandle)
-	end
-
-	playerHandle.frameHandle.frame:Hide()
-	table.insert(availablePlayerFrames, playerHandle.frameHandle)
-
-	RCT.trackedPlayers[playerHandle.guid] = nil
+	RCT.players[self.guid] = nil
+	RCT.frameManager:OnPlayerRemoved(self)
 end
 
-function RCT:UpdatePlayerHandle(playerHandle, info)
-	playerHandle.info = info
+function RCT.Player:Update(info)
+	-- Wait until the info has been fully initialized
+	if info.name == nil then return end
+	if info.class == nil then return end
+	if info.global_spec_id == nil then return end
+	if info.global_spec_id == 0 then return end
+	if info.lku == nil then return end
+	if info.talents == nil then return end
 
-	if playerHandle.cache.global_spec_id ~= info.global_spec_id then
-		RCT:HandlePlayerSpecSwitch(playerHandle, info)
-		RCT:RearrangeFrameList()
-	else
-		local shouldUpdate = false
+	-- Default to being dirty so spells are initialized at least once
+	local dirty = true
 
-		-- Handle level up
-		if UnitLevel(info.lku) ~= playerHandle.level then
-			shouldUpdate = true
-		-- Handle talent switch
+	if self.initialized then
+		dirt = false
+
+		-- Check if level up
+		if UnitLevel(info.lku) ~= self.level then
+			dirty = true
+		-- Check if spec switch
+		elseif info.global_spec_id ~= self.spec then
+			dirty = true
+		-- Check if talent change
 		else
-			for _, existing_talent_id in ipairs(playerHandle.cache.talents) do
-				local contains = false
+			local newTalents = RCT:ConstructTalentTable(info.talents)
 
-				for new_talent_id, _ in pairs(info.talents) do
-					if new_talent_id == existing_talent_id then
-						contains = true
-						break
-					end
-				end
-
-				if not contains then
-					shouldUpdate = true
+			for talentId, _ in pairs(newTalents) do
+				if not RCT:TableContainsKey(self.talents, talentId) then
+					dirty = true
 					break
 				end
 			end
 		end
-
-		if shouldUpdate then
-			RCT:HandlePlayerLevelUpOrTalentSwitch(playerHandle, info)
-			RCT:RearrangeFrameList()
-		end
 	end
 
-	if playerHandle.frameHandle == nil then
-		RCT:InitializePlayerFrameHandle(playerHandle)
+	self.name = info.name
+	self.unit = info.lku
+	self.class = info.class
+	self.spec = info.global_spec_id
+	self.level = UnitLevel(self.unit)
+	self.talents = RCT:ConstructTalentTable(info.talents)
+	self.initialized = true
 
-		if playerHandle.frameHandle ~= nil then
-			for _, spellHandle in pairs(playerHandle.spells) do
-				RCT:InitializeSpellFrameHandle(spellHandle)
-			end
-		end
+	if dirty then
+		self:Reload()
 	end
 end
 
-function RCT:HandlePlayerSpecSwitch(playerHandle, info)
-	-- We're still missing info about the player	
-	if info == nil or info.class == nil or info.global_spec_id == nil or info.global_spec_id == 0 then
-		return
+function RCT.Player:Reload()
+	if not self.initialized then return end
+
+	local availableSpells = RCT.spellDB[self.class][self.spec]
+	local newSpells = { }
+
+	-- Remove uncastable spells
+	for spellId, _ in pairs(availableSpells) do
+		if RCT:CanPlayerCastSpell(self, spellId) then
+			table.insert(newSpells, spellId)
+		end
 	end
 
-	playerHandle.cache.global_spec_id = info.global_spec_id
-	
-	local newSpells = RCT:GetSpellsForSpec(info.class, info.global_spec_id)
-	local oldSpells = playerHandle.spells
-
-	-- Remove spells not available for the new spec
-	for spellId, _ in pairs(oldSpells) do
-		if not RCT:TableContainsKey(newSpells, spellId) then
-			RCT:DestroySpellHandle(oldSpells[spellId])
+	-- Remove old spells
+	for spellId, _ in pairs(self.spells) do
+		if not RCT:TableContains(newSpells, spellId) then
+			self:RemoveSpell(spellId)
 		end
 	end
 
 	-- Add new spells
-	for spellId, _ in pairs(newSpells) do
-		if not RCT:TableContainsKey(playerHandle.spells, spellId) then
-			RCT:CreateSpellHandle(playerHandle, spellId)
+	for _, spellId in ipairs(newSpells) do
+		if not RCT:TableContainsKey(self.spells, spellId) then
+			self:AddSpell(spellId)
 		end
 	end
-
-	RCT:HandlePlayerLevelUpOrTalentSwitch(playerHandle, info)
 end
 
-function RCT:HandlePlayerLevelUpOrTalentSwitch(playerHandle, info)
-	-- We're still missing info about the player	
-	if info == nil or info.talents == nil then
-		return
-	end
-
-	playerHandle.cache.talents = RCT:CacheTalents(info.talents)
-	playerHandle.level = UnitLevel(info.lku)
-	
-	for _, spellHandle in pairs(playerHandle.spells) do
-		local spellInfo = RCT:GetSpellInfo(spellHandle)
-		local castable = false
-		
-		if playerHandle.cache.level >= spellInfo.level then
-			castable = true
-
-			-- Check if the spell is a talent
-			if spellInfo.talents ~= nil then
-				local hasTalentSelected = false
-				
-				for i=1, #spellInfo.talents do
-					local talent = spellInfo.talents[i]
-
-					if RCT:PlayerHasTalentSelected(playerHandle, talent.tier, talent.column) then
-						hasTalentSelected = true
-						break
-					end
-				end
-
-				castable = hasTalentSelected
-			end
-		end
-
-		spellHandle.castable = castable
-	end
-end
-
-function RCT:GetPlayerHandle(guid)
-	if RCT:HasPlayerHandle(guid) then
-		return RCT.trackedPlayers[guid]
-	end
-
-	return nil
-end
-
-function RCT:HasPlayerHandle(guid)
-	return RCT.trackedPlayers[guid] ~= nil
-end
-
---[[ Spell Handle ]]--
-
-function RCT:CreateSpellHandle(playerHandle, spellId)
-	if RCT:HasSpellHandle(playerHandle, spellId) then
+function RCT.Player:AddSpell(spellId)
+	if self:GetSpellById(spellId) ~= nil then
 		return nil
 	end
 	
-	local spell = { }
-	spell.playerHandle = playerHandle
-	spell.spellId = spellId
-	spell.castable = true
-	spell.frameHandle = nil
-	spell.activeStart = 0
-	spell.activeEnd	= 0
-	spell.readyTime	= 0
-
-	playerHandle.spells[spellId] = spell
-	RCT:InitializeSpellFrameHandle(spell)
-
-	return spell
+	self.spells[spellId] = RCT.Spell(self, spellId)
+	return self.spells[spellId]
 end
 
-function RCT:DestroySpellHandle(spellHandle)
-	if spellHandle == nil then
+function RCT.Player:RemoveSpell(spellId)
+	if self:GetSpellById(spellId) == nil then
 		return
 	end
-
-	spellHandle.frameHandle.frame:Hide()
-	table.insert(availableSpellFrames, spellHandle.frameHandle)
-
-	spellHandle.playerHandle.spells[spellHandle.spellId] = nil
+	
+	self.spells[spellId]:Destroy()
+	self.spells[spellId] = nil
 end
 
-function RCT:GetSpellHandle(playerHandle, spellId)
-	if RCT:HasSpellHandle(playerHandle, spellId) then
-		return playerHandle.spells[spellId]
+function RCT.Player:IsInitialized()
+	return self.initialized
+end
+
+function RCT.Player:GetSpells()
+	local result = { }
+
+	for _, spell in pairs(self.spells) do
+		table.insert(result, spell)
+	end
+
+	return result
+end
+
+function RCT.Player:GetTalents()
+	return self.talents
+end
+
+function RCT.Player:GetSpellById(spellId)
+	for id, spell in pairs(self.spells) do
+		if id == spellId then
+			return spell
+		end
 	end
 
 	return nil
 end
 
-function RCT:HasSpellHandle(playerHandle, spellId)
-	return playerHandle.spells[spellId] ~= nil
+function RCT.Player:GetName()
+	return self.name
 end
 
---[[ Spell Database ]]--
-
-function RCT:GetSpellsForSpec(class, spec)
-	return RCT.spellDB[class][spec]
+function RCT.Player:GetUnitId()
+	return self.unit
 end
 
-function RCT:GetSpellInfo(spellHandle)
-	local class = spellHandle.playerHandle.info.class
-	local spec = spellHandle.playerHandle.info.global_spec_id
-
-	local spells = RCT:GetSpellsForSpec(class, spec)
-	return spells[spellHandle.spellId]
+function RCT.Player:GetClass()
+	return self.class
 end
 
-function RCT:GetSpellDuration(spellHandle)
-	local spellInfo = RCT:GetSpellInfo(spellHandle)
+function RCT.Player:GetSpec()
+	return self.spec
+end
+
+function RCT.Player:GetLevel()
+	return self.level
+end
+
+--[[ Spell class ]]--
+
+RCT.Spell = { }
+RCT.Spell.__index = RCT.Spell
+
+setmetatable(RCT.Spell, {
+	__call = function(cls, ...)
+		local self = setmetatable({}, cls)
+		self:new(...)
+		return self
+	end,
+})
+
+function RCT.Spell:new(player, spellId)
+	self.player = player
+	self.spellId = spellId	
+	self.spellInfo = RCT:GetSpellInfo(player:GetClass(), player:GetSpec(), spellId)
+	self.lastCastTimestamp = 0
+	self.cooldownEndTimestamp = 0
+	self.activeEndTimestamp = 0
+
+	RCT.frameManager:OnSpellAdded(self)
+end
+
+function RCT.Spell:Destroy()
+	RCT.frameManager:OnSpellRemoved(self)
+end
+
+function RCT.Spell:Reset()
+	self.lastCastTimestamp = 0
+	self.cooldownEndTimestamp = 0
+	self.activeEndTimestamp = 0
+end
+
+function RCT.Spell:OnCast(timestamp)
+	self.lastCastTimestamp = timestamp
+	self.cooldownEndTimestamp = timestamp + self:GetCooldown()
+	self.activeEndTimestamp = timestamp + self:GetDuration()
+
+	print(self:GetPlayer():GetName() .. " cast: " .. self:GetSpellInfo().name)
+end
+
+function RCT.Spell:GetDuration()
+	local spellInfo = self:GetSpellInfo()
 
 	if spellInfo.duration ~= nil then
 		if spellInfo.modifiers ~= nil and spellInfo.modifiers.duration ~= nil then
-			return spellInfo.modifiers.duration(spellHandle.playerHandle, spellInfo)
+			return spellInfo.modifiers.duration(self:GetPlayer(), spellInfo)
 		end
 
 		return spellInfo.duration
@@ -254,12 +243,12 @@ function RCT:GetSpellDuration(spellHandle)
 	return 0
 end
 
-function RCT:GetSpellCooldown(spellHandle)
-	local spellInfo = RCT:GetSpellInfo(spellHandle)
+function RCT.Spell:GetCooldown()
+	local spellInfo = self:GetSpellInfo()
 
 	if spellInfo.cooldown ~= nil then
 		if spellInfo.modifiers ~= nil and spellInfo.modifiers.cooldown ~= nil then
-			return spellInfo.modifiers.cooldown(spellHandle.playerHandle, spellInfo)
+			return spellInfo.modifiers.cooldown(self:GetPlayer(), spellInfo)
 		end
 
 		return spellInfo.cooldown
@@ -268,238 +257,212 @@ function RCT:GetSpellCooldown(spellHandle)
 	return 0
 end
 
---[[ Frame ]]--
+function RCT.Spell:GetPlayer()
+	return self.player
+end
 
-function RCT:InitializePlayerFrameHandle(playerHandle)
-	if playerHandle.info == nil or playerHandle.info.class == nil then
+function RCT.Spell:GetSpellId()
+	return self.spellId
+end
+
+function RCT.Spell:GetSpellInfo()
+	return self.spellInfo
+end
+
+function RCT.Spell:GetLastCastTime()
+	return self.lastCastTimestamp
+end
+
+function RCT.Spell:GetCooldownEndTime()
+	return self.cooldownEndTimestamp
+end
+
+function RCT.Spell:GetActiveEndTime()
+	return self.activeEndTimestamp
+end
+
+--[[ Frame manager class ]]--
+
+RCT.FrameManager = { }
+RCT.FrameManager.__index = RCT.FrameManager
+
+setmetatable(RCT.FrameManager, {
+	__call = function(cls, ...)
+		local self = setmetatable({}, cls)
+		self:new(...)
+		return self
+	end,
+})
+
+function RCT.FrameManager:new()
+	self.style = nil
+
+	self.addedPlayers = { }
+	self.removedPlayers = { }
+
+	self.addedSpells = { }
+	self.removedSpells = { }
+end
+
+function RCT.FrameManager:Update()
+	if self.style == nil then
 		return
 	end
 
-	local frameHandle
-	if #availablePlayerFrames > 0 then
-		frameHandle = availablePlayerFrames[1]
-		frameHandle.frame:Show()
-
-		table.remove(availablePlayerFrames, 1)
-	else
-		frameHandle = RCT:CreatePlayerFrameHandle()
+	-- Remove
+	for _, spell in ipairs(self.removedSpells) do
+		self.style:OnSpellRemoved(spell)
 	end
 
-	local classColor = RAID_CLASS_COLORS[playerHandle.info.class]
-	frameHandle.playerName:SetText(playerHandle.info.name)
-	frameHandle.playerName:SetTextColor(classColor.r, classColor.g, classColor.b, 1)
+	for _, player in ipairs(self.removedPlayers) do
+		self.style:OnPlayerRemoved(player)
+	end
 
-	playerHandle.frameHandle = frameHandle
-	RCT:RearrangeFrameList()
+	self.removedSpells = { }
+	self.removedPlayers = { }
+
+	-- Add
+	local spellsNotAdded = { }
+	local playersNotAdded = { }
+
+	for _, player in ipairs(self.addedPlayers) do
+		if player:IsInitialized() then
+			self.style:OnPlayerAdded(player)
+		else
+			table.insert(playersNotAdded, player)
+		end
+	end
+
+	for _, spell in ipairs(self.addedSpells) do
+		if spell:GetPlayer():IsInitialized() then
+			self.style:OnSpellAdded(spell)
+		else
+			table.insert(spellsNotAdded, spell)
+		end
+	end
+
+	self.addedSpells = spellsNotAdded
+	self.addedPlayers = playersNotAdded
+
+	-- Redraw
+	self.style:Redraw()
 end
 
-function RCT:ReleasePlayerFrame(playerHandle)
-
-end
-
-function RCT:CreatePlayerFrameHandle()
-	-- temp
-	RCT.frame:SetPoint("CENTER", 400, 0)
-	RCT.frame:SetWidth(200)
-	RCT.frame:SetHeight(500)
-	--RCT.frame:SetFrameStrata("LOW")
-
-	numPlayerFrames = numPlayerFrames + 1
-	
-	local frameHandle = { }	
-	frameHandle.id = numPlayerFrames
-
-	-- Main Frame
-	frameHandle.frame = CreateFrame("Frame", "RCT_PlayerFrame_" .. numPlayerFrames, RCT.frame)
-	frameHandle.frame:SetClampedToScreen(true)
-	frameHandle.frame:SetWidth(RCT.frame:GetWidth())
-	frameHandle.frame:SetHeight(20)
-
-	-- Player Name
-	frameHandle.playerName = frameHandle.frame:CreateFontString("$parent_PlayerName", "OVERLAY", "GameFontNormal")
-	frameHandle.playerName:SetPoint("TOPLEFT", frameHandle.frame)
-	frameHandle.playerName:SetWidth(frameHandle.frame:GetWidth())
-	frameHandle.playerName:SetHeight(20)
-	frameHandle.playerName:SetJustifyH("LEFT")
-
-	return frameHandle
-end
-
-function RCT:InitializeSpellFrameHandle(spellHandle)
-	if spellHandle.playerHandle.frameHandle == nil then
+function RCT.FrameManager:OnPlayerAdded(player)
+	if RCT:TableContains(self.addedPlayers, player) or RCT:TableContains(self.removedPlayers, player) then
 		return
 	end
 
-	local spellInfo = RCT:GetSpellInfo(spellHandle)
-	local frameHandle
-	if #availableSpellFrames > 0 then
-		frameHandle = availableSpellFrames[1]
-		frameHandle.frame:Show()
-
-		table.remove(availableSpellFrames, 1)
-	else
-		frameHandle = RCT:CreateSpellFrameHandle()
-	end
-	
-	frameHandle.icon:SetTexture(select(3, GetSpellInfo(spellInfo.spellId)))
-	frameHandle.spellName:SetText(spellInfo.name)
-	frameHandle.cooldown:SetTextColor(0, 1, 0, 1)
-	frameHandle.cooldown:SetText("Ready")
-	
-	spellHandle.frameHandle = frameHandle
-	RCT:RearrangeFrameList()
+	table.insert(self.addedPlayers, player)
 end
 
-function RCT:CreateSpellFrameHandle()
-	numSpellFrames = numSpellFrames + 1
+function RCT.FrameManager:OnPlayerRemoved(player)
+	if RCT:TableContains(self.addedPlayers, player) or RCT:TableContains(self.removedPlayers, player) then
+		return
+	end
 
-	local frameHandle = { }
-	frameHandle.id = numSpellFrames
-
-	-- Main Frame
-	frameHandle.frame = CreateFrame("Frame", "RCT_SpellFrame_" ..numSpellFrames, RCT.frame)
-	frameHandle.frame:SetWidth(RCT.frame:GetWidth())
-	frameHandle.frame:SetHeight(20)
-
-	frameHandle.icon = frameHandle.frame:CreateTexture("$parent_Icon", "OVERLAY")
-	frameHandle.icon:SetWidth(15)
-	frameHandle.icon:SetHeight(15)
-	frameHandle.icon:SetPoint("LEFT", frameHandle.frame, "LEFT")
-	frameHandle.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-
-	frameHandle.spellName = frameHandle.frame:CreateFontString("$parent_SpellName", "OVERLAY", "GameFontNormal")
-	frameHandle.spellName:SetWidth(frameHandle.frame:GetWidth() * 0.6)
-	frameHandle.spellName:SetHeight(frameHandle.frame:GetHeight())
-	frameHandle.spellName:SetPoint("LEFT", frameHandle.icon, "RIGHT", 3, 0)
-	frameHandle.spellName:SetJustifyH("LEFT")
-
-	frameHandle.cooldown = frameHandle.frame:CreateFontString("$parent_CooldownText", "OVERLAY", "GameFontNormal")
-	frameHandle.cooldown:SetWidth(frameHandle.frame:GetWidth() * 0.3)
-	frameHandle.cooldown:SetHeight(frameHandle.frame:GetHeight())
-	frameHandle.cooldown:SetPoint("RIGHT", frameHandle.frame, "RIGHT")
-	frameHandle.cooldown:SetJustifyH("RIGHT")
-
-	return frameHandle;
+	table.insert(self.removedPlayers, player)
 end
 
-function RCT:RearrangeFrameList()
-	local frameHandleOrder = { }
-
-	for _, playerHandle in pairs(RCT.trackedPlayers) do
-		local frameHandle = playerHandle.frameHandle
-		frameHandleOrder[frameHandle.id] = { playerHandle, frameHandle }
+function RCT.FrameManager:OnSpellAdded(spell)
+	if RCT:TableContains(self.addedSpells, spell) or RCT:TableContains(self.removedSpells, spell) then
+		return
 	end
-	
-	local lastFrameHandle = nil
-	local lastFrameHandleHeight = 0
-	for i=1, #frameHandleOrder do
-		if frameHandleOrder[i] ~= nil then
-			local playerHandle = frameHandleOrder[i][1]
-			local frameHandle = frameHandleOrder[i][2]
 
-			if lastFrameHandle == nil then
-				frameHandle.frame:SetPoint("TOPLEFT", RCT.frame)
-			else
-				frameHandle.frame:SetPoint("TOPLEFT", lastFrameHandle.frame, "BOTTOMLEFT", 0, -lastFrameHandleHeight)
-			end
+	table.insert(self.addedSpells, spell)
+end
 
-			local nextY = frameHandle.frame:GetHeight()
-			for _, spellHandle in pairs(playerHandle.spells) do
-				local spellFrameHandle = spellHandle.frameHandle
+function RCT.FrameManager:OnSpellRemoved(spell)
+	if RCT:TableContains(self.addedSpells, spell) or RCT:TableContains(self.removedSpells, spell) then
+		return
+	end
 
-				if spellFrameHandle ~= nil then
-					spellFrameHandle.frame:SetPoint("TOPLEFT", frameHandle.frame, "TOPLEFT", 0, -nextY)
-					nextY = nextY + spellFrameHandle.frame:GetHeight()
-				end
-			end
+	table.insert(self.removedSpells, spell)
+end
 
-			if nextY > frameHandle.frame:GetHeight() then
-				frameHandle.frame:Show()
-				lastFrameHandle = frameHandle
-				lastFrameHandleHeight = nextY
-			else
-				frameHandle.frame:Hide()
+function RCT.FrameManager:SetStyle(style)
+	if self.style ~= nil then
+		self.style:Destroy()
+		self.style = nil
+	end
+
+	self.style = style()
+
+	for _, player in pairs(RCT.players) do
+		self.style:OnPlayerAdded(player)
+		
+		local spells = player:GetSpells()
+		for _, spell in spells do
+			self.style.OnSpellAdded(spell)
+		end
+	end
+end
+
+--[[ Initialization ]]--
+
+function RCT:OnInitialize()
+	RCT:InitializeSpells()
+	RCT.frameManager = RCT.FrameManager()
+	RCT.frameManager:SetStyle(RCT.FrameStyleCompactList)
+
+	LGIST.RegisterCallback(self, "GroupInSpecT_Update", "OnUnitUpdated")
+	LGIST.RegisterCallback(self, "GroupInSpecT_Remove", "OnUnitRemoved")
+
+	RCT:RegisterEvent("ENCOUNTER_END")
+	RCT:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
+
+	RCT:RegisterChatCommand("RCT", "SlashProcessor")
+
+	RCT:ScheduleRepeatingTimer("UpdateFrames", 1)
+end
+
+function RCT:InitializeSpells()
+	for className, class in pairs(RCT.spellDB) do
+		for specName, spec in pairs(class) do
+			for spellId, spell in pairs(spec) do
+				local name, _, icon = GetSpellInfo(spellId)
+				
+				spell.name = name
+				spell.icon = icon
+				spell.spellId = spellId
 			end
 		end
 	end
 end
 
---[[ Tracking ]]--
+--[[ LibGroupInSpecT callbacks ]]--
 
-function RCT:HandlePlayerSpellCast(spellHandle)
-	-- Make sure the spell if marked as castable
-	spellHandle.castable = true
+function RCT:OnUnitUpdated(evt, guid, unitId, info)
+	local player = RCT:GetPlayerByGUID(guid)
 
-	local duration = RCT:GetSpellDuration(spellHandle)
-	local cooldown = RCT:GetSpellCooldown(spellHandle)
+	if player == nil then
+		player = RCT.Player(guid, info)
+	end
 
-	spellHandle.castTime = GetTime()
-	spellHandle.readyTime = GetTime() + cooldown
+	player:Update(info)
+end
 
-	if duration > 0 then
-		spellHandle.activeStart = GetTime()
-		spellHandle.activeEnd = GetTime() + duration
+function RCT:OnUnitRemoved(evt, guid)
+	local player = RCT:GetPlayerByGUID(guid)
+
+	if player ~= nil then
+		player:Destroy()
 	end
 end
 
-function RCT:ResetSpellStatus(spellHandle)
-	spellHandle.activeStart = 0
-	spellHandle.activeEnd = 0
-	spellHandle.readyTime = 0
-end
-
--- TEMP
-function RCT:HandlePlayerSpellCastText()
-	local currentTime = GetTime()
-
-	for _, playerHandle in pairs(RCT.trackedPlayers) do
-		for _, spellHandle in pairs(playerHandle.spells) do
-			if spellHandle.frameHandle ~= nil then
-				if spellHandle.activeEnd > currentTime then
-					spellHandle.frameHandle.cooldown:SetTextColor(1, 1, 0, 1)
-					spellHandle.frameHandle.cooldown:SetText(RCT:GetFormattedTimeString(spellHandle.activeEnd - currentTime))
-				elseif spellHandle.readyTime > currentTime then
-					spellHandle.frameHandle.cooldown:SetTextColor(1, 0, 0, 1)
-					spellHandle.frameHandle.cooldown:SetText(RCT:GetFormattedTimeString(spellHandle.readyTime - currentTime))
-				else
-					spellHandle.frameHandle.cooldown:SetTextColor(0, 1, 0, 1)
-					spellHandle.frameHandle.cooldown:SetText("Ready")
-				end
-			end
-		end
-	end
-end
-
-function RCT:GetFormattedTimeString(totalSeconds)
-	local minutes = math.floor(totalSeconds / 60)
-	local seconds = math.floor(totalSeconds % 60)
-
-	return string.format("%02d:%02d", minutes, seconds)
-end
-
---[[ LibStub callbacks & event callbacks ]]--
-
-function RCT:GROUP_ROSTER_UPDATE()
-
-end
-
-function RCT:ENCOUNTER_START(evt, encounterId, encounterName, difficultyId, groupSize)
-
-end
+--[[ Callbacks ]]--
 
 function RCT:ENCOUNTER_END(evt, encounterId, encounterName, difficultyId, groupSize, success)
-	if groupSize >= 10 then
-		for _, playerHandle in pairs(RCT.trackedPlayers) do
-			for _, spellHandle in pairs(playerHandle.spells) do
-				local spellInfo = RCT:GetSpellInfo(spellHandle)
-				
-				if spellInfo.resetOnWipe then
-					RCT:ResetSpellStatus(spellHandle)
-				end
-			end
-		end
+	if groupSize < 10 then
+		return
+	end
 
-		print("Reset cooldowns")
+	for _, player in pairs(RCT.players) do
+		local spells = player:GetSpells()
+
+		for _, spell in ipairs(spells) do
+			spell:Reset()
+		end
 	end
 end
 
@@ -508,83 +471,75 @@ function RCT:COMBAT_LOG_EVENT_UNFILTERED(evt, ...)
 		local type, _, guid = select(2, ...)
 
 		if type == "SPELL_CAST_SUCCESS" then
-			local playerHandle = RCT:GetPlayerHandle(guid)
+			local player = RCT:GetPlayerByGUID(guid)
 
-			if playerHandle ~= nil then
+			if player ~= nil then
 				local spellId = select(12, ...)
-				local spellHandle = RCT:GetSpellHandle(playerHandle, spellId)
-				
-				if spellHandle ~= nil then
-					RCT:HandlePlayerSpellCast(spellHandle)
+				local spell = player:GetSpellById(spellId)
+
+				if spell ~= nil then
+					spell:OnCast(GetTime())
 				end
 			end
 		end
 	end
 end
 
-function RCT:SlashProcessor(input)
-
-end
-
-function RCT:OnInitialize()
-	LGIST.RegisterCallback(self, "GroupInSpecT_Update", "OnUnitUpdated")
-	LGIST.RegisterCallback(self, "GroupInSpecT_Remove", "OnUnitRemoved")
-
-	RCT:RegisterEvent("GROUP_ROSTER_UPDATE")
-	RCT:RegisterEvent("ENCOUNTER_START")
-	RCT:RegisterEvent("ENCOUNTER_END")
-	RCT:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
-
-	RCT:RegisterChatCommand("RCT", "SlashProcessor")
-
-	RCT:ScheduleRepeatingTimer("HandlePlayerSpellCastText", 1)
-end
-
---[[ LibGroupInSpecT callbacks ]]--
-
-function RCT:OnUnitUpdated(evt, guid, unitId, info)
-	if not RCT:HasPlayerHandle(guid) then
-		if RCT.__debugMode then
-			for i=1, 4 do
-				RCT:CreatePlayerHandle(guid .. i, info)
-			end
-		else
-			RCT:CreatePlayerHandle(guid, info)
-		end
-	end
-
-	if RCT.__debugMode then
-		for i=1, 4 do
-			local playerHandle = RCT:GetPlayerHandle(guid .. i)
-			RCT:UpdatePlayerHandle(playerHandle, info)
-		end
-	else
-		local playerHandle = RCT:GetPlayerHandle(guid)
-		RCT:UpdatePlayerHandle(playerHandle, info)
-	end
-end
-
-function RCT:OnUnitRemoved(evt, guid)
-	if RCT:HasPlayerHandle(guid) then
-		local playerHandle = RCT:GetPlayerHandle(guid)
-		RCT:DestroyPlayerHandle(playerHandle)
-		RCT:RearrangeFrameList()
-	end
+function RCT:UpdateFrames()
+	RCT.frameManager:Update()
 end
 
 --[[ Helper functions ]]--
 
--- Get the player's group type ("raid", "party" or "none")
-function RCT:GetGroupType()
-	if IsInRaid() then
-		return "raid"
+function RCT:GetPlayerByGUID(guid)
+	return RCT.players[guid]
+end
+
+function RCT:GetSpellInfo(class, spec, spellId)
+	return RCT.spellDB[class][spec][spellId]
+end
+
+function RCT:CanPlayerCastSpell(player, spellId)
+	local spellInfo = RCT:GetSpellInfo(player:GetClass(), player:GetSpec(), spellId)
+
+	if player:GetLevel() < spellInfo.level then
+		return false
 	end
 
-	if IsInGroup() or IsInGroup(LE_PARTY_CATEGORY_INSTANCE) then
-		return "party"
+	if spellInfo.talents ~= nil then
+		local hasTalent = false
+
+		for _, talent in ipairs(spellInfo.talents) do
+			if RCT:PlayerHasTalentSelected(player, talent.tier, talent.column) then
+				hasTalent = true
+				break
+			end
+		end
+
+		if not hasTalent then
+			return false
+		end
 	end
 
-	return "none"
+	return true
+end
+
+function RCT:PlayerHasTalentSelected(player, tier, column)
+	for _, talent in pairs(player:GetTalents()) do
+		if talent.tier == tier and talent.column == column then
+			return true
+		end
+	end
+end
+
+function RCT:ConstructTalentTable(talents)
+	local result = { }
+
+	for talentId, talent in pairs(talents) do
+		result[talentId] = { tier = talent.tier, column = talent.column }
+	end
+
+	return result
 end
 
 function RCT:TableContainsKey(table, value)
@@ -597,20 +552,12 @@ function RCT:TableContainsKey(table, value)
     return false
 end
 
-function RCT:PlayerHasTalentSelected(playerHandle, tier, column)
-	for _, talent in pairs(playerHandle.info.talents) do
-		if talent.tier == tier and talent.column == column then
-			return true
-		end
-	end
-end
+function RCT:TableContains(table, value)
+	for _, v in ipairs(table) do
+        if v == value then
+            return true
+        end
+    end
 
-function RCT:CacheTalents(talents)
-	local result = { }
-
-	for talent_id, _ in pairs(talents) do
-		table.insert(result, talent_id)
-	end
-
-	return result
+    return false
 end

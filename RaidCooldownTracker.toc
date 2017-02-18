@@ -7,3 +7,4 @@
 init.lua
 spell_list.lua
 core.lua
+styles.lua

@@ -31,6 +31,13 @@ RCT.specs = {
 	DemonHunter	= {	Havoc 			= 577, 	Vengeance	= 581											}
 }
 
+RCT.categories = {
+	Healing		= 1,
+	Utility		= 2,
+	BRez		= 4,
+	Defensive	= 8,
+}
+
 RCT.spellDB = {
 	[RCT.classes.Mage] = {
 		[RCT.specs.Mage.Arcane] = {
@@ -43,161 +50,132 @@ RCT.spellDB = {
 	[RCT.classes.Paladin] = {
 		[RCT.specs.Paladin.Holy] = {
 			[31821] = {		-- Aura Mastery
-				name		= "Aura Mastery",
-				spellId 	= 31821,
 				cooldown 	= 180,
 				duration 	= 8,
 				level		= 70,
-				resetOnWipe	= true
+				category	= RCT.categories.Healing
 			},
 			[31842] = {		-- Avenging Wrath
-				name		= "Avenging Wrath",
-				spellId		= 31842,
 				cooldown	= 120,
 				duration	= 20,
 				level		= 80,
+				category	= RCT.categories.Healing,
 				modifiers	= {
 					-- Sanctified Wrath talent - Increase duration by 25%
 					duration	= function(playerHandle, spell) if RCT:PlayerHasTalentSelected(playerHandle, 6, 2) then return spell.duration * 1.25 else return spell.duration end end
 				}
 			},
 			[105809] = {	-- Holy Avenger
-				name		= "Holy Avenger",
-				spellId		= 105809,
 				cooldown	= 90,
 				duration	= 20,
 				level		= 75,
+				category	= RCT.categories.Healing,
 				talents		= { { tier=5, column=2 } }
 			},
 			[200652] = {	-- Tyr's Deliverance
-				name		= "Tyr's Deliverance",
-				spellId		= 200652,
 				cooldown	= 90,
 				duration	= 10,
-				level		= 98
+				level		= 98,
+				category	= RCT.categories.Healing
 			},
 			[633] = {		-- Lay on Hands
-				name		= "Lay on Hands",
-				spellId		= 633,
 				cooldown	= 420,
 				level		= 55,
-				resetOnWipe	= true,
+				category	= RCT.categories.Utility,
 				modifiers	= {
 					-- Unbreakable Spirit talent - Reduce cooldown by 30%
 					cooldown	= function(playerHandle, spell) if RCT:PlayerHasTalentSelected(playerHandle, 2, 2) then return spell.cooldown * 0.7 else return spell.cooldown end end
 				}
 			},
-			-- [1022] = {		-- Blessing of Protection
-			-- 	name		= "Blessing of Protection",
-			-- 	spellId		= 1022,
-			-- 	cooldown	= 255,
-			-- 	duration	= 10,
-			-- 	level		= 48,
-			-- 	resetOnWipe	= true
-			-- },
-			-- [6940] = {		-- Blessing of Sacrifice
-			-- 	name		= "Blessing of Sacrifice",
-			-- 	spellId		= 6940,
-			-- 	cooldown	= 204,
-			-- 	duration	= 12,
-			-- 	level		= 56,
-			-- 	resetOnWipe	= true
-			-- },
-			-- [642] = {		-- Divine Shield
-			-- 	name		= "Divine Shield",
-			-- 	spellId 	= 642,
-			-- 	cooldown 	= 300,
-			-- 	duration 	= 8,
-			-- 	level		= 18,
-			-- 	resetOnWipe	= true,
-			-- 	modifiers	= {
-			-- 		-- Unbreakable Spirit talent - Reduce cooldown by 30%
-			-- 		cooldown	= function(playerHandle, spell) if RCT:PlayerHasTalentSelected(playerHandle, 2, 2) then return spell.cooldown * 0.7 else return spell.cooldown end end
-			-- 	}
-			-- },
+			[1022] = {		-- Blessing of Protection
+				cooldown	= 255,
+				duration	= 10,
+				level		= 48,
+				category	= RCT.categories.Utility,
+			},
+			[6940] = {		-- Blessing of Sacrifice
+				cooldown	= 204,
+				duration	= 12,
+				level		= 56,
+				category	= RCT.categories.Utility
+			},
+			[642] = {		-- Divine Shield
+				cooldown 	= 300,
+				duration 	= 8,
+				level		= 18,
+				category	= RCT.categories.Defensive,
+				modifiers	= {
+					-- Unbreakable Spirit talent - Reduce cooldown by 30%
+					cooldown	= function(playerHandle, spell) if RCT:PlayerHasTalentSelected(playerHandle, 2, 2) then return spell.cooldown * 0.7 else return spell.cooldown end end
+				}
+			},
 		},
 		[RCT.specs.Paladin.Protection] = {
-			-- [31850] = {		-- Ardent Defender
-			-- 	name		= "Ardent Defender",
-			-- 	spellId 	= 31850,
-			-- 	cooldown 	= 90,
-			-- 	duration 	= 8,
-			-- 	level		= 50
-			-- },
-			-- [204018] = {	-- Blessing of Spellwarding
-			-- 	name		= "Blessing of Spellwarding",
-			-- 	spellId 	= 204018,
-			-- 	cooldown 	= 180,
-			-- 	duration 	= 10,
-			-- 	level		= 60,
-			-- 	talents		= { { tier=4, column=1 } }
-			-- },
-			-- [1022] = {		-- Blessing of Protection
-			-- 	name		= "Blessing of Protection",
-			-- 	spellId 	= 1022,
-			-- 	cooldown 	= 300,
-			-- 	duration 	= 10,
-			-- 	level		= 48,
-			-- 	resetOnWipe	= true,
-			-- 	talents		= { { tier=4, column=2 }, { tier=4, column=3 } }
-			-- },
-			-- [6940] = {		-- Blessing of Sacrifice
-			-- 	name		= "Blessing of Sacrifice",
-			-- 	spellId 	= 6940,
-			-- 	cooldown 	= 90,
-			-- 	duration 	= 12,
-			-- 	level		= 56
-			-- },
-			-- [642] = {		-- Divine Shield
-			-- 	name		= "Divine Shield",
-			-- 	spellId 	= 642,
-			-- 	cooldown 	= 300,
-			-- 	duration 	= 8,
-			-- 	level		= 18,
-			-- 	resetOnWipe	= true
-			-- },
+			[31850] = {		-- Ardent Defender
+				cooldown 	= 90,
+				duration 	= 8,
+				level		= 50,
+				category	= RCT.categories.Defensive,
+			},
+			[204018] = {	-- Blessing of Spellwarding
+				cooldown 	= 180,
+				duration 	= 10,
+				level		= 60,
+				category	= RCT.categories.Utility,
+				talents		= { { tier=4, column=1 } }
+			},
+			[1022] = {		-- Blessing of Protection
+				cooldown 	= 300,
+				duration 	= 10,
+				level		= 48,
+				category	= RCT.categories.Utility,
+				talents		= { { tier=4, column=2 }, { tier=4, column=3 } }
+			},
+			[6940] = {		-- Blessing of Sacrifice
+				cooldown 	= 90,
+				duration 	= 12,
+				level		= 56,
+				category	= RCT.categories.Utility
+			},
+			[642] = {		-- Divine Shield
+				cooldown 	= 300,
+				duration 	= 8,
+				level		= 18,
+				category	= RCT.categories.Defensive
+			},
 			[633] = {		-- Lay on Hands
-				name		= "Lay on Hands",
-				spellId 	= 633,
 				cooldown 	= 600,
 				level		= 55,
-				resetOnWipe	= true
+				category	= RCT.categories.Utility
 			},
-			-- [212641] = {	-- Guardian of Ancient Kings
-			-- 	name		= "Guardian of Ancient Kings",
-			-- 	spellId 	= 212641,
-			-- 	cooldown 	= 300,
-			-- 	duration	= 8,
-			-- 	level		= 72,
-			-- 	resetOnWipe	= true
-			-- }
+			[212641] = {	-- Guardian of Ancient Kings
+				cooldown 	= 300,
+				duration	= 8,
+				level		= 72,
+				category	= RCT.categories.Defensive
+			}
 		},
 		[RCT.specs.Paladin.Retribution] = {
-			-- [642] = {		-- Divine Shield
-			-- 	name		= "Divine Shield",
-			-- 	spellId 	= 642,
-			-- 	cooldown 	= 300,
-			-- 	duration 	= 8,
-			-- 	level		= 18,
-			-- 	resetOnWipe	= true,
-			-- 	modifiers	= {
-			-- 		cooldown	= function(playerHandle, spell) if RCT:PlayerHasTalentSelected(playerHandle, 6, 1) then return spell.cooldown * 0.8 else return spell.cooldown end end
-			-- 	}
-			-- },
-			-- [1022] = {		-- Blessing of Protection
-			-- 	name		= "Blessing of Protection",
-			-- 	spellId 	= 1022,
-			-- 	cooldown 	= 210,
-			-- 	duration 	= 10,
-			-- 	level		= 48,
-			-- 	resetOnWipe	= true
-			-- },
+			[642] = {		-- Divine Shield
+				cooldown 	= 300,
+				duration 	= 8,
+				level		= 18,
+				category	= RCT.categories.Defensive,
+				modifiers	= {
+					-- Divine Intervention talent - Reduce cooldown by 20%
+					cooldown	= function(playerHandle, spell) if RCT:PlayerHasTalentSelected(playerHandle, 6, 1) then return spell.cooldown * 0.8 else return spell.cooldown end end
+				}
+			},
+			[1022] = {		-- Blessing of Protection
+				cooldown 	= 210,
+				duration 	= 10,
+				level		= 48,
+				category	= RCT.categories.Utility,
+			},
 			[633] = {		-- Lay on Hands
-				name		= "Lay on Hands",
-				spellId 	= 633,
 				cooldown 	= 600,
 				level		= 55,
-				resetOnWipe	= true
+				category	= RCT.categories.Utility
 			},
 		},
 	},
@@ -213,11 +191,10 @@ RCT.spellDB = {
 		},
 		[RCT.specs.Warrior.Fury] = {
 			[97462] = {		-- Commanding Shout
-				name		= "Commanding Shout",
-				spellId 	= 97462,
 				cooldown 	= 180,
 				duration	= 10,
-				level		= 80
+				level		= 80,
+				category	= RCT.categories.Utility
 			}
 		},
 		[RCT.specs.Warrior.Protection] = {
@@ -226,11 +203,10 @@ RCT.spellDB = {
 	[RCT.classes.Druid] = {
 		[RCT.specs.Druid.Balance] = {
 			[29166] = {		-- Innervate
-				name		= "Innervate",
-				spellId 	= 29166,
 				cooldown 	= 180,
 				duration	= 10,
-				level		= 50
+				level		= 50,
+				category	= RCT.categories.Utility
 			}		
 		},
 		[RCT.specs.Druid.Feral] = {			
@@ -239,55 +215,49 @@ RCT.spellDB = {
 		},
 		[RCT.specs.Druid.Restoration] = {
 			[740] = {		-- Tranquility
-				name		= "Tranquility",
-				spellId 	= 740,
 				cooldown 	= 180,
 				duration	= 8,
 				level		= 80,
+				category	= RCT.categories.Healing,
 				modifiers	= {
 					-- Inner Peace talent - Reduce the cooldown by 60 seconds
 					cooldown	= function(playerHandle, spell) if RCT:PlayerHasTalentSelected(playerHandle, 6, 2) then return spell.cooldown - 60 else return spell.cooldown end end
 				}
 			},
 			[102342] = {	-- Ironbark
-				name		= "Ironbark",
-				spellId 	= 102342,
 				cooldown 	= 90,
 				duration	= 12,
 				level		= 54,
+				category	= RCT.categories.Utility,
 				modifiers	= {
 					-- Stonebark talent - Reduce the cooldown by 30 seconds
 					cooldown	= function(playerHandle, spell) if RCT:PlayerHasTalentSelected(playerHandle, 7, 2) then return spell.cooldown - 30 else return spell.cooldown end end
 				}
 			},
 			[208253] = {	-- Essence of G'Hanir
-				name		= "Essence of G'Hanir",
-				spellId 	= 208253,
 				cooldown 	= 90,
 				duration	= 8,
-				level		= 98
+				level		= 98,
+				category	= RCT.categories.Healing
 			},
 			[33891] = {		-- Incarnation: Tree of Life
-				name		= "Incarnation: Tree of Life",
-				spellId 	= 33891,
 				cooldown 	= 180,
 				duration	= 30,
 				level		= 75,
+				category	= RCT.categories.Healing,
 				talents		= { { tier=5, column=2 } }
 			},
-			-- [108238] = {	-- Renewal
-			-- 	name		= "Renewal",
-			-- 	spellId 	= 108238,
-			-- 	cooldown 	= 90,
-			-- 	level		= 30,
-			-- 	talents		= { { tier=2, column=1 } }
-			-- },
+			[108238] = {	-- Renewal
+				cooldown 	= 90,
+				level		= 30,
+				category	= RCT.categories.Defensive,
+				talents		= { { tier=2, column=1 } }
+			},
 			[29166] = {		-- Innervate
-				name		= "Innervate",
-				spellId 	= 29166,
 				cooldown 	= 180,
 				duration	= 10,
-				level		= 50
+				level		= 50,
+				category	= RCT.categories.Utility
 			}
 		}
 	},
@@ -365,19 +335,16 @@ RCT.spellDB = {
 		},
 		[RCT.specs.Shaman.Restoration] = {
 			[108280] = {	-- Healing Tide Totem
-				name		= "Healing Tide Totem",
-				spellId 	= 108280,
 				cooldown 	= 180,
 				duration 	= 10,
 				level		= 80,
-				resetOnWipe	= true
+				category	= RCT.categories.Healing
 			},
 			[98008] = {		-- Spirit Link Totem
-				name		= "Spirit Link Totem",
-				spellId 	= 98008,
 				cooldown 	= 120,
 				duration 	= 6,
-				level		= 56
+				level		= 56,
+				category	= RCT.categories.Healing
 			}
 		}
 	},
