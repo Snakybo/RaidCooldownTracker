@@ -141,10 +141,6 @@ function RCT.Player:RemoveSpell(spellId)
 	self.spells[spellId] = nil
 end
 
-function RCT.Player:IsInitialized()
-	return self.initialized
-end
-
 function RCT.Player:GetSpells()
 	local result = { }
 
@@ -155,10 +151,6 @@ function RCT.Player:GetSpells()
 	return result
 end
 
-function RCT.Player:GetTalents()
-	return self.talents
-end
-
 function RCT.Player:GetSpellById(spellId)
 	for id, spell in pairs(self.spells) do
 		if id == spellId then
@@ -167,26 +159,6 @@ function RCT.Player:GetSpellById(spellId)
 	end
 
 	return nil
-end
-
-function RCT.Player:GetName()
-	return self.name
-end
-
-function RCT.Player:GetUnitId()
-	return self.unit
-end
-
-function RCT.Player:GetClass()
-	return self.class
-end
-
-function RCT.Player:GetSpec()
-	return self.spec
-end
-
-function RCT.Player:GetLevel()
-	return self.level
 end
 
 --[[ Spell class ]]--
@@ -205,7 +177,7 @@ setmetatable(RCT.Spell, {
 function RCT.Spell:new(player, spellId)
 	self.player = player
 	self.spellId = spellId	
-	self.spellInfo = RCT:GetSpellInfo(player:GetClass(), player:GetSpec(), spellId)
+	self.spellInfo = RCT:GetSpellInfo(player.class, player.spec, spellId)
 	self.lastCastTimestamp = 0
 	self.cooldownEndTimestamp = 0
 	self.activeEndTimestamp = 0
@@ -228,15 +200,15 @@ function RCT.Spell:OnCast(timestamp)
 	self.cooldownEndTimestamp = timestamp + self:GetCooldown()
 	self.activeEndTimestamp = timestamp + self:GetDuration()
 
-	print(self:GetPlayer():GetName() .. " cast: " .. self:GetSpellInfo().name)
+	print(self.player.name .. " cast: " .. self.spellInfo.name)
 end
 
 function RCT.Spell:GetDuration()
-	local spellInfo = self:GetSpellInfo()
+	local spellInfo = self.spellInfo
 
 	if spellInfo.duration ~= nil then
 		if spellInfo.modifiers ~= nil and spellInfo.modifiers.duration ~= nil then
-			return spellInfo.modifiers.duration(self:GetPlayer(), spellInfo)
+			return spellInfo.modifiers.duration(self.player, spellInfo)
 		end
 
 		return spellInfo.duration
@@ -246,41 +218,17 @@ function RCT.Spell:GetDuration()
 end
 
 function RCT.Spell:GetCooldown()
-	local spellInfo = self:GetSpellInfo()
+	local spellInfo = self.spellInfo
 
 	if spellInfo.cooldown ~= nil then
 		if spellInfo.modifiers ~= nil and spellInfo.modifiers.cooldown ~= nil then
-			return spellInfo.modifiers.cooldown(self:GetPlayer(), spellInfo)
+			return spellInfo.modifiers.cooldown(self.player, spellInfo)
 		end
 
 		return spellInfo.cooldown
 	end
 
 	return 0
-end
-
-function RCT.Spell:GetPlayer()
-	return self.player
-end
-
-function RCT.Spell:GetSpellId()
-	return self.spellId
-end
-
-function RCT.Spell:GetSpellInfo()
-	return self.spellInfo
-end
-
-function RCT.Spell:GetLastCastTime()
-	return self.lastCastTimestamp
-end
-
-function RCT.Spell:GetCooldownEndTime()
-	return self.cooldownEndTimestamp
-end
-
-function RCT.Spell:GetActiveEndTime()
-	return self.activeEndTimestamp
 end
 
 --[[ Frame manager class ]]--
@@ -328,7 +276,7 @@ function RCT.FrameManager:Update()
 	local playersNotAdded = { }
 
 	for _, player in ipairs(self.addedPlayers) do
-		if player:IsInitialized() then
+		if player.initialized then
 			self.style:OnPlayerAdded(player)
 		else
 			table.insert(playersNotAdded, player)
@@ -336,7 +284,7 @@ function RCT.FrameManager:Update()
 	end
 
 	for _, spell in ipairs(self.addedSpells) do
-		if spell:GetPlayer():IsInitialized() then
+		if spell.player.initialized then
 			self.style:OnSpellAdded(spell)
 		else
 			table.insert(spellsNotAdded, spell)
@@ -641,9 +589,9 @@ function RCT:GetSpellInfo(class, spec, spellId)
 end
 
 function RCT:CanPlayerCastSpell(player, spellId)
-	local spellInfo = RCT:GetSpellInfo(player:GetClass(), player:GetSpec(), spellId)
+	local spellInfo = RCT:GetSpellInfo(player.class, player.spec, spellId)
 
-	if player:GetLevel() < spellInfo.level then
+	if player.level < spellInfo.level then
 		return false
 	end
 
@@ -666,7 +614,7 @@ function RCT:CanPlayerCastSpell(player, spellId)
 end
 
 function RCT:PlayerHasTalentSelected(player, tier, column)
-	for _, talent in pairs(player:GetTalents()) do
+	for _, talent in pairs(player.talents) do
 		if talent.tier == tier and talent.column == column then
 			return true
 		end

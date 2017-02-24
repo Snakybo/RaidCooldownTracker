@@ -213,16 +213,16 @@ function RCT.FrameStyleCompactList:Reorder()
 	end
 	
 	local function SortAlphabetically(lhs, rhs)
-		local playerName1 = lhs.spell:GetPlayer():GetName()
-		local playerName2 = rhs.spell:GetPlayer():GetName()
+		local playerName1 = lhs.spell.player.name
+		local playerName2 = rhs.spell.player.name
 
 		if playerName1 < playerName2 then
 			return true
 		end
 
 		if playerName1 == playerName2 then
-			local spellName1 = lhs.spell:GetSpellInfo().name
-			local spellName2 = rhs.spell:GetSpellInfo().name
+			local spellName1 = lhs.spell.spellInfo.name
+			local spellName2 = rhs.spell.spellInfo.name
 
 			return spellName1 < spellName2
 		end
@@ -290,12 +290,12 @@ end
 function RCT.FrameStyleCompactList.SpellFrame:Redraw()
 	local currentTime = GetTime()
 
-	if self.spell:GetActiveEndTime() > currentTime then
-		local activeEnd = self.spell:GetActiveEndTime()
+	if self.spell.activeEndTimestamp > currentTime then
+		local activeEnd = self.spell.activeEndTimestamp
 		self.cooldown:SetTextColor(1, 1, 0, 1)
 		self.cooldown:SetText(self:GetFormattedTimeString(activeEnd - currentTime))
-	elseif self.spell:GetCooldownEndTime() > currentTime then
-		local cooldownEnd = self.spell:GetCooldownEndTime()
+	elseif self.spell.cooldownEndTimestamp > currentTime then
+		local cooldownEnd = self.spell.cooldownEndTimestamp
 		self.cooldown:SetTextColor(1, 0, 0, 1)
 		self.cooldown:SetText(self:GetFormattedTimeString(cooldownEnd - currentTime))
 	else
@@ -314,12 +314,12 @@ end
 function RCT.FrameStyleCompactList.SpellFrame:SetSpell(spell)
 	self.spell = spell
 
-	local classColor = RAID_CLASS_COLORS[spell:GetPlayer():GetClass()]
+	local classColor = RAID_CLASS_COLORS[spell.player.class]
 
-	self.playerName:SetText(spell:GetPlayer():GetName())
+	self.playerName:SetText(spell.player.name)
 	self.playerName:SetTextColor(classColor.r, classColor.g, classColor.b, 1)
 
-	self.spellName:SetText(spell:GetSpellInfo().name)
+	self.spellName:SetText(spell.spellInfo.name)
 	self.spellName:SetTextColor(classColor.r, classColor.g, classColor.b, 1)
 
 	self.cooldown:SetTextColor(0, 1, 0, 1)
