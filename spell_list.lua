@@ -279,45 +279,75 @@ RCT.spellDB = {
 	},
 	[RCT.classes.Priest] = {
 		[RCT.specs.Priest.Discipline] = {
+			[73325] = {		-- Leap of Faith
+				cooldown 	= 90,
+				level		= 63,
+				category	= RCT.categories.Utility
+			},
+			[62618] = {		-- Power Word: Barrier
+				cooldown 	= 300,
+				duration	= 10,
+				level		= 70,
+				category	= RCT.categories.Utility
+			},
+			[47536] = {		-- Rapture
+				cooldown 	= 120,
+				duration	= 11,
+				level		= 50,
+				category	= RCT.categories.Utility
+			},
+			[207946] = {	-- Light's Wrath
+				cooldown 	= 120,
+				level		= 98,
+				category	= RCT.categories.Utility
+			}
 		},
 		[RCT.specs.Priest.Holy] = {
 			[47788] = {		-- Guardian Spirit
-				name		= "Guardian Spirit",
-				spellId 	= 47788,
 				cooldown 	= 240,
 				duration	= 10,
-				level		= 48
+				level		= 48,
+				category	= RCT.categories.Healing
 			},
-			-- [19236] = {		-- Desperate Prayer
-			-- 	name		= "Desperate Prayer",
-			-- 	spellId 	= 19236,
-			-- 	cooldown 	= 90,
-			-- 	duration	= 10,
-			-- 	level		= 52
-			-- },
+			[19236] = {		-- Desperate Prayer
+				cooldown 	= 90,
+				duration	= 10,
+				level		= 52,
+				category	= RCT.categories.Defensive
+			},
 			[64843] = {		-- Divine Hymn
-				name		= "Divine Hymn",
-				spellId 	= 64843,
 				cooldown 	= 180,
 				duration	= 8,
-				level		= 70
+				level		= 70,
+				category	= RCT.categories.Healing
 			},
 			[200183] = {	-- Apotheosis
-				name		= "Apotheosis",
-				spellId 	= 200183,
 				cooldown 	= 180,
 				duration	= 30,
 				level		= 100,
+				category	= RCT.categories.Healing,
 				talents		= { { tier=7, column=1 } }
 			},
 			[73325] = {		-- Leap of Faith
-				name		= "Leap of Faith",
-				spellId 	= 73325,
 				cooldown 	= 90,
-				level		= 63
+				level		= 63,
+				category	= RCT.categories.Utility
+			},
+			[64901] = {	-- Symbol of Hope
+				cooldown 	= 360,
+				duration	= 12,
+				level		= 100,
+				category	= RCT.categories.Utility,
+				talents		= { { tier=4, column=3 } }
 			}
 		},
 		[RCT.specs.Priest.Shadow] = {
+			[15286] = {	-- Vampiric Embrace
+				cooldown 	= 300,
+				duration	= 15,
+				level		= 70,
+				category	= RCT.categories.Utility
+			}
 		}
 	},
 	[RCT.classes.Rogue] = {
@@ -330,10 +360,23 @@ RCT.spellDB = {
 	},
 	[RCT.classes.Shaman] = {
 		[RCT.specs.Shaman.Elemental] = {
+			[108281] = {	-- Ancestral Guidance
+				cooldown 	= 120,
+				duration 	= 10,
+				level		= 30,
+				category	= RCT.categories.Healing,
+				talents		= { { tier=2, column=2 } }
+			},
 		},
 		[RCT.specs.Shaman.Enhancement] = {
 		},
 		[RCT.specs.Shaman.Restoration] = {
+			[207778] = {	-- Gift of the Queen
+				cooldown 	= 45,
+				duration 	= 6,
+				level		= 98,
+				category	= RCT.categories.Healing
+			},
 			[108280] = {	-- Healing Tide Totem
 				cooldown 	= 180,
 				duration 	= 10,
@@ -345,7 +388,45 @@ RCT.spellDB = {
 				duration 	= 6,
 				level		= 56,
 				category	= RCT.categories.Healing
-			}
+			},
+			[79206] = {		-- Spiritwalker's Grace
+				cooldown 	= 120,
+				duration 	= 15,
+				level		= 36,
+				category	= RCT.categories.Utility,
+				modifiers	= {
+					-- Graceful Spirit talent - Reduce the cooldown by 60 seconds
+					cooldown	= function(playerHandle, spell) if RCT:PlayerHasTalentSelected(playerHandle, 2, 2) then return spell.cooldown - 60 else return spell.cooldown end end
+				}
+			},
+			[114052] = {	-- Ascendance
+				cooldown 	= 180,
+				duration 	= 15,
+				level		= 100,
+				category	= RCT.categories.Healing,
+				talents		= { { tier=7, column=1 } }
+			},
+			[207399] = {	-- Ancestral Protection Totem
+				cooldown 	= 300,
+				duration 	= 30,
+				level		= 75,
+				category	= RCT.categories.Healing,
+				talents		= { { tier=5, column=1 } }
+			},
+			[108281] = {	-- Ancestral Guidance
+				cooldown 	= 120,
+				duration 	= 10,
+				level		= 60,
+				category	= RCT.categories.Healing,
+				talents		= { { tier=4, column=2 } }
+			},
+			[192077] = {	-- Wind Rush Totem
+				cooldown 	= 120,
+				duration 	= 15,
+				level		= 60,
+				category	= RCT.categories.Utility,
+				talents		= { { tier=2, column=3 } }
+			},
 		}
 	},
 	[RCT.classes.Warlock] = {
@@ -362,6 +443,36 @@ RCT.spellDB = {
 		[RCT.specs.Monk.Windwalker] = {
 		},
 		[RCT.specs.Monk.Mistweaver] = {
+			[198664] = {	-- Invoke Chi-Ji, the Red Crane
+				cooldown 	= 180,
+				duration 	= 45,
+				level		= 90,
+				category	= RCT.categories.Healing,
+				talents		= { { tier=6, column=2 } }
+			},
+			[116849] = {	-- Life Cocoon
+				cooldown 	= 180,
+				duration 	= 12,
+				level		= 35,
+				category	= RCT.categories.Healing
+			},
+			[116849] = {	-- Revival
+				cooldown 	= 180,
+				level		= 70,
+				category	= RCT.categories.Healing
+			},
+			[122278] = {	-- Dampen Harm
+				cooldown 	= 120,
+				level		= 75,
+				category	= RCT.categories.Defensive
+			},
+			[197908] = {	-- Mana Tea
+				cooldown 	= 120,
+				duration 	= 10,
+				level		= 100,
+				category	= RCT.categories.Utility,
+				talents		= { { tier=7, column=1 } }
+			}
 		}
 	},
 	[RCT.classes.DemonHunter] = {
