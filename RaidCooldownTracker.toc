@@ -5,6 +5,7 @@
 ## Notes: Cooldown tracker for raid groups
 ## SavedVariables: RaidCooldownTrackerDB
 
+embeds.xml
 init.lua
 spell_list.lua
 core.lua
