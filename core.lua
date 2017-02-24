@@ -199,8 +199,6 @@ function RCT.Spell:OnCast(timestamp)
 	self.lastCastTimestamp = timestamp
 	self.cooldownEndTimestamp = timestamp + self:GetCooldown()
 	self.activeEndTimestamp = timestamp + self:GetDuration()
-
-	print(self.player.name .. " cast: " .. self.spellInfo.name)
 end
 
 function RCT.Spell:GetDuration()
