@@ -343,7 +343,7 @@ RCT.spellDB = {
 		},
 		[RCT.specs.Priest.Shadow] = {
 			[15286] = {	-- Vampiric Embrace
-				cooldown 	= 300,
+				cooldown 	= 180,
 				duration	= 15,
 				level		= 70,
 				category	= RCT.categories.Utility
