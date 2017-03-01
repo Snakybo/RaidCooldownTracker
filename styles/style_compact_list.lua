@@ -154,6 +154,7 @@ function RCT.FrameStyleCompactList.SpellFrame:new(list, spell)
 
 	self:SetSpell(spell)
 end
+
 function RCT.FrameStyleCompactList.SpellFrame:Redraw()
 	local currentTime = GetTime()
 
