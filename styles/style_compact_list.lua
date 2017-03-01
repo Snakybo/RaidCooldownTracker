@@ -1,135 +1,3 @@
---[[ Base style ]]--
-
-RCT.FrameStyleBase = { }
-RCT.FrameStyleBase.__index = RCT.FrameStyleBase
-
-setmetatable(RCT.FrameStyleBase, {
-	__call = function(cls, ...)
-		local self = setmetatable({}, cls)
-		self:new(...)
-		return self
-	end,
-})
-
-function RCT.FrameStyleBase:new()
-end
-
-function RCT.FrameStyleBase:Destroy()
-end
-
-function RCT.FrameStyleBase:Redraw()
-end
-
-function RCT.FrameStyleBase:OnPlayerAdded(player)
-end
-
-function RCT.FrameStyleBase:OnPlayerRemoved(player)
-end
-
-function RCT.FrameStyleBase:OnSpellAdded(spell)
-end
-
-function RCT.FrameStyleBase:OnSpellRemoved(spell)
-end
-
-function RCT.FrameStyleBase:RestoreFrame(frame, parent)
-	frame:SetParent(parent)
-	frame:Show()
-end
-
-function RCT.FrameStyleBase:ResetFrame(frame)
-	frame:Hide()
-	frame:SetParent(nil)
-end
-
---[[ Categorized list Style ]]--
-
-RCT.FrameStyleCategorizedList = { }
-for k, v in pairs(RCT.FrameStyleBase) do RCT.FrameStyleCategorizedList[k] = v end
-RCT.FrameStyleCategorizedList.__index = RCT.FrameStyleCategorizedList
-
-setmetatable(RCT.FrameStyleCategorizedList, {
-	__index = RCT.FrameStyleBase,
-	__call = function(cls, ...)
-		local self = setmetatable({}, cls)
-		self:new(...)
-		return self
-	end,
-})
-
-function RCT.FrameStyleCategorizedList:new()
-	RCT.FrameStyleBase:new()
-end
-
-function RCT.FrameStyleCategorizedList:Destroy()
-	RCT.FrameStyleBase:Destroy()
-end
-
-function RCT.FrameStyleCategorizedList:Redraw()
-	RCT.FrameStyleBase:Redraw()
-end
-
-function RCT.FrameStyleCategorizedList:OnPlayerAdded(player)
-	RCT.FrameStyleBase:OnPlayerAdded()
-end
-
-function RCT.FrameStyleCategorizedList:OnPlayerRemoved(player)
-	RCT.FrameStyleBase:OnPlayerRemoved()
-end
-
-function RCT.FrameStyleCategorizedList:OnSpellAdded(spell)
-	RCT.FrameStyleBase:OnSpellAdded()
-end
-
-function RCT.FrameStyleCategorizedList:OnSpellRemoved(spell)
-	RCT.FrameStyleBase:OnSpellRemoved()
-end
-
---[[ List style ]]--
-
-RCT.FrameStyleList = { }
-for k, v in pairs(RCT.FrameStyleBase) do RCT.FrameStyleList[k] = v end
-RCT.FrameStyleList.__index = RCT.FrameStyleList
-
-setmetatable(RCT.FrameStyleList, {
-	__index = RCT.FrameStyleBase,
-	__call = function(cls, ...)
-		local self = setmetatable({}, cls)
-		self:new(...)
-		return self
-	end,
-})
-
-function RCT.FrameStyleList:new()
-	RCT.FrameStyleBase:new()
-end
-
-function RCT.FrameStyleList:Destroy()
-	RCT.FrameStyleBase:Destroy()
-end
-
-function RCT.FrameStyleList:Redraw()
-	RCT.FrameStyleBase:Redraw()
-end
-
-function RCT.FrameStyleList:OnPlayerAdded(player)
-	RCT.FrameStyleBase:OnPlayerAdded()
-end
-
-function RCT.FrameStyleList:OnPlayerRemoved(player)
-	RCT.FrameStyleBase:OnPlayerRemoved()
-end
-
-function RCT.FrameStyleList:OnSpellAdded(spell)
-	RCT.FrameStyleBase:OnSpellAdded()
-end
-
-function RCT.FrameStyleList:OnSpellRemoved(spell)
-	RCT.FrameStyleBase:OnSpellRemoved()
-end
-
---[[ Compact List style ]]--
-
 RCT.FrameStyleCompactList = { }
 for k, v in pairs(RCT.FrameStyleBase) do RCT.FrameStyleCompactList[k] = v end
 RCT.FrameStyleCompactList.__index = RCT.FrameStyleCompactList
@@ -286,7 +154,6 @@ function RCT.FrameStyleCompactList.SpellFrame:new(list, spell)
 
 	self:SetSpell(spell)
 end
-
 function RCT.FrameStyleCompactList.SpellFrame:Redraw()
 	local currentTime = GetTime()
 
@@ -303,8 +170,6 @@ function RCT.FrameStyleCompactList.SpellFrame:Redraw()
 		self.cooldown:SetText("Ready")
 	end
 end
-
-
 
 function RCT.FrameStyleCompactList.SpellFrame:SetSpell(spell)
 	self.spell = spell
@@ -324,4 +189,3 @@ end
 function RCT.FrameStyleCompactList.SpellFrame:GetHeight()
 	return 20
 end
-
