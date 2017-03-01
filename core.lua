@@ -103,7 +103,7 @@ function RCT.Player:Reload()
 
 	-- Remove uncastable and hidden spells
 	for spellId, _ in pairs(availableSpells) do
-		if RCT:CanPlayerCastSpell(self, spellId) and RCT.database:IsSpellVisible(self.class, self.spec, spellId) then
+		if self:CanCastSpell(spellId) and RCT.database:IsSpellVisible(self.class, self.spec, spellId) then
 			table.insert(newSpells, spellId)
 		end
 	end
@@ -119,6 +119,39 @@ function RCT.Player:Reload()
 	for _, spellId in ipairs(newSpells) do
 		if not RCT:TableContainsKey(self.spells, spellId) then
 			self:AddSpell(spellId)
+		end
+	end
+end
+
+function RCT.Player:CanCastSpell(spellId)
+	local spellInfo = RCT:GetSpellInfo(self.class, self.spec, spellId)
+
+	if self.level < (spellInfo.level or 1) then
+		return false
+	end
+
+	if spellInfo.talents ~= nil then
+		local hasTalent = false
+
+		for _, talent in ipairs(spellInfo.talents) do
+			if self:HasTalentSelected(talent.tier, talent.column) then
+				hasTalent = true
+				break
+			end
+		end
+
+		if not hasTalent then
+			return false
+		end
+	end
+
+	return true
+end
+
+function RCT.Player:HasTalentSelected(tier, column)
+	for _, talent in pairs(self.talents) do
+		if talent.tier == tier and talent.column == column then
+			return true
 		end
 	end
 end
@@ -568,7 +601,7 @@ function RCT:UpdateFrames()
 	RCT.frameManager:Update()
 end
 
---[[ Helper functions ]]--
+--[[ Util functions ]]--
 
 function RCT:InjectSpellProperty(class, spec, spellId, key, value)
 	local spell = RCT.spellDB[class][spec][spellId]
@@ -584,39 +617,6 @@ end
 
 function RCT:GetSpellInfo(class, spec, spellId)
 	return RCT.spellDB[class][spec][spellId]
-end
-
-function RCT:CanPlayerCastSpell(player, spellId)
-	local spellInfo = RCT:GetSpellInfo(player.class, player.spec, spellId)
-
-	if player.level < spellInfo.level then
-		return false
-	end
-
-	if spellInfo.talents ~= nil then
-		local hasTalent = false
-
-		for _, talent in ipairs(spellInfo.talents) do
-			if RCT:PlayerHasTalentSelected(player, talent.tier, talent.column) then
-				hasTalent = true
-				break
-			end
-		end
-
-		if not hasTalent then
-			return false
-		end
-	end
-
-	return true
-end
-
-function RCT:PlayerHasTalentSelected(player, tier, column)
-	for _, talent in pairs(player.talents) do
-		if talent.tier == tier and talent.column == column then
-			return true
-		end
-	end
 end
 
 function RCT:ConstructTalentTable(talents)
@@ -647,4 +647,11 @@ function RCT:TableContains(table, value)
     end
 
     return false
+end
+
+function RCT:FormatTimeString(totalSeconds)
+	local minutes = math.floor(totalSeconds / 60)
+	local seconds = math.floor(totalSeconds % 60)
+
+	return string.format("%02d:%02d", minutes, seconds)
 end

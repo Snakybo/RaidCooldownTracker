@@ -62,7 +62,7 @@ RCT.spellDB = {
 				category	= RCT.categories.Healing,
 				modifiers	= {
 					-- Sanctified Wrath talent - Increase duration by 25%
-					duration	= function(playerHandle, spell) if RCT:PlayerHasTalentSelected(playerHandle, 6, 2) then return spell.duration * 1.25 else return spell.duration end end
+					duration	= function(player, spell) if player:HasTalentSelected(player, 6, 2) then return spell.duration * 1.25 else return spell.duration end end
 				}
 			},
 			[105809] = {	-- Holy Avenger
@@ -84,7 +84,7 @@ RCT.spellDB = {
 				category	= RCT.categories.Utility,
 				modifiers	= {
 					-- Unbreakable Spirit talent - Reduce cooldown by 30%
-					cooldown	= function(playerHandle, spell) if RCT:PlayerHasTalentSelected(playerHandle, 2, 2) then return spell.cooldown * 0.7 else return spell.cooldown end end
+					cooldown	= function(player, spell) if player:HasTalentSelected(player, 2, 2) then return spell.cooldown * 0.7 else return spell.cooldown end end
 				}
 			},
 			[1022] = {		-- Blessing of Protection
@@ -106,7 +106,7 @@ RCT.spellDB = {
 				category	= RCT.categories.Defensive,
 				modifiers	= {
 					-- Unbreakable Spirit talent - Reduce cooldown by 30%
-					cooldown	= function(playerHandle, spell) if RCT:PlayerHasTalentSelected(playerHandle, 2, 2) then return spell.cooldown * 0.7 else return spell.cooldown end end
+					cooldown	= function(player, spell) if player:HasTalentSelected(player, 2, 2) then return spell.cooldown * 0.7 else return spell.cooldown end end
 				}
 			},
 		},
@@ -163,7 +163,7 @@ RCT.spellDB = {
 				category	= RCT.categories.Defensive,
 				modifiers	= {
 					-- Divine Intervention talent - Reduce cooldown by 20%
-					cooldown	= function(playerHandle, spell) if RCT:PlayerHasTalentSelected(playerHandle, 6, 1) then return spell.cooldown * 0.8 else return spell.cooldown end end
+					cooldown	= function(player, spell) if player:HasTalentSelected(player, 6, 1) then return spell.cooldown * 0.8 else return spell.cooldown end end
 				}
 			},
 			[1022] = {		-- Blessing of Protection
@@ -221,7 +221,7 @@ RCT.spellDB = {
 				category	= RCT.categories.Healing,
 				modifiers	= {
 					-- Inner Peace talent - Reduce the cooldown by 60 seconds
-					cooldown	= function(playerHandle, spell) if RCT:PlayerHasTalentSelected(playerHandle, 6, 2) then return spell.cooldown - 60 else return spell.cooldown end end
+					cooldown	= function(player, spell) if player:HasTalentSelected(player, 6, 2) then return spell.cooldown - 60 else return spell.cooldown end end
 				}
 			},
 			[102342] = {	-- Ironbark
@@ -231,7 +231,7 @@ RCT.spellDB = {
 				category	= RCT.categories.Utility,
 				modifiers	= {
 					-- Stonebark talent - Reduce the cooldown by 30 seconds
-					cooldown	= function(playerHandle, spell) if RCT:PlayerHasTalentSelected(playerHandle, 7, 2) then return spell.cooldown - 30 else return spell.cooldown end end
+					cooldown	= function(player, spell) if player:HasTalentSelected(player, 7, 2) then return spell.cooldown - 30 else return spell.cooldown end end
 				}
 			},
 			[208253] = {	-- Essence of G'Hanir
@@ -396,7 +396,7 @@ RCT.spellDB = {
 				category	= RCT.categories.Utility,
 				modifiers	= {
 					-- Graceful Spirit talent - Reduce the cooldown by 60 seconds
-					cooldown	= function(playerHandle, spell) if RCT:PlayerHasTalentSelected(playerHandle, 2, 2) then return spell.cooldown - 60 else return spell.cooldown end end
+					cooldown	= function(player, spell) if player:HasTalentSelected(player, 2, 2) then return spell.cooldown - 60 else return spell.cooldown end end
 				}
 			},
 			[114052] = {	-- Ascendance

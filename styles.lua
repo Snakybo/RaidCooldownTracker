@@ -293,23 +293,18 @@ function RCT.FrameStyleCompactList.SpellFrame:Redraw()
 	if self.spell.activeEndTimestamp > currentTime then
 		local activeEnd = self.spell.activeEndTimestamp
 		self.cooldown:SetTextColor(1, 1, 0, 1)
-		self.cooldown:SetText(self:GetFormattedTimeString(activeEnd - currentTime))
+		self.cooldown:SetText(RCT:FormatTimeString(activeEnd - currentTime))
 	elseif self.spell.cooldownEndTimestamp > currentTime then
 		local cooldownEnd = self.spell.cooldownEndTimestamp
 		self.cooldown:SetTextColor(1, 0, 0, 1)
-		self.cooldown:SetText(self:GetFormattedTimeString(cooldownEnd - currentTime))
+		self.cooldown:SetText(RCT:FormatTimeString(cooldownEnd - currentTime))
 	else
 		self.cooldown:SetTextColor(0, 1, 0, 1)
 		self.cooldown:SetText("Ready")
 	end
 end
 
-function RCT.FrameStyleCompactList.SpellFrame:GetFormattedTimeString(totalSeconds)
-	local minutes = math.floor(totalSeconds / 60)
-	local seconds = math.floor(totalSeconds % 60)
 
-	return string.format("%02d:%02d", minutes, seconds)
-end
 
 function RCT.FrameStyleCompactList.SpellFrame:SetSpell(spell)
 	self.spell = spell
