@@ -43,8 +43,8 @@ function RCT.FrameStyleCompactList:Redraw()
 	end
 end
 
-function RCT.FrameStyleCompactList:OnSpellAdded(spell)
-	RCT.FrameStyleBase:OnSpellAdded()
+function RCT.FrameStyleCompactList:AddSpell(spell)
+	RCT.FrameStyleBase:AddSpell()
 
 	if not RCT:TableContainsKey(self.spellFrames, spell) then
 		if #self.unusedFrames > 0 then
@@ -60,8 +60,8 @@ function RCT.FrameStyleCompactList:OnSpellAdded(spell)
 	end
 end
 
-function RCT.FrameStyleCompactList:OnSpellRemoved(spell)
-	RCT.FrameStyleBase:OnSpellRemoved()
+function RCT.FrameStyleCompactList:RemoveSpell(spell)
+	RCT.FrameStyleBase:RemoveSpell()
 
 	if RCT:TableContainsKey(self.spellFrames, spell) then
 		RCT.FrameStyleBase:ResetFrame(self.spellFrames[spell].frame)

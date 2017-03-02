@@ -6,6 +6,12 @@ local RCT = RCT
 local LGIST = LibStub("LibGroupInSpecT-1.1")
 local AceDB = LibStub("AceDB-3.0")
 
+-- Events
+RCT.EVENT_PLAYER_ADDED = "PLAYER_ADDED"
+RCT.EVENT_PLAYER_REMOVED = "PLAYER_REMOVED"
+RCT.EVENT_SPELL_ADDED = "SPELL_ADDDED"
+RCT.EVENT_SPELL_REMOVED = "SPELL_REMOVED"
+
 RCT.players = { }
 
 RCT.frameManager = nil
@@ -36,7 +42,7 @@ function RCT.Player:new(guid, info)
 	self.spells = { }
 
 	RCT.players[guid] = self
-	RCT.frameManager:OnPlayerAdded(self)
+	RCT:SendMessage(RCT.EVENT_PLAYER_ADDED, self)
 end
 
 function RCT.Player:Destroy()
@@ -45,7 +51,7 @@ function RCT.Player:Destroy()
 	end
 
 	RCT.players[self.guid] = nil
-	RCT.frameManager:OnPlayerRemoved(self)
+	RCT:SendMessage(RCT.EVENT_PLAYER_REMOVED, self)
 end
 
 function RCT.Player:Update(info)
@@ -215,11 +221,11 @@ function RCT.Spell:new(player, spellId)
 	self.cooldownEndTimestamp = 0
 	self.activeEndTimestamp = 0
 
-	RCT.frameManager:OnSpellAdded(self)
+	RCT:SendMessage(RCT.EVENT_SPELL_ADDED, self)
 end
 
 function RCT.Spell:Destroy()
-	RCT.frameManager:OnSpellRemoved(self)
+	RCT:SendMessage(RCT.EVENT_SPELL_REMOVED, self)
 end
 
 function RCT.Spell:Reset()
@@ -283,6 +289,11 @@ function RCT.FrameManager:new()
 
 	self.addedSpells = { }
 	self.removedSpells = { }
+
+	RCT:RegisterMessage(RCT.EVENT_PLAYER_ADDED, self.EventHandler, self)
+	RCT:RegisterMessage(RCT.EVENT_PLAYER_REMOVED, self.EventHandler, self)
+	RCT:RegisterMessage(RCT.EVENT_SPELL_ADDED, self.EventHandler, self)
+	RCT:RegisterMessage(RCT.EVENT_SPELL_REMOVED, self.EventHandler, self)
 end
 
 function RCT.FrameManager:Update()
@@ -292,11 +303,11 @@ function RCT.FrameManager:Update()
 
 	-- Remove
 	for _, spell in ipairs(self.removedSpells) do
-		self.style:OnSpellRemoved(spell)
+		self.style:RemoveSpell(spell)
 	end
 
 	for _, player in ipairs(self.removedPlayers) do
-		self.style:OnPlayerRemoved(player)
+		self.style:RemovePlayer(player)
 	end
 
 	self.removedSpells = { }
@@ -308,7 +319,7 @@ function RCT.FrameManager:Update()
 
 	for _, player in ipairs(self.addedPlayers) do
 		if player.initialized then
-			self.style:OnPlayerAdded(player)
+			self.style:AddPlayer(player)
 		else
 			table.insert(playersNotAdded, player)
 		end
@@ -316,7 +327,7 @@ function RCT.FrameManager:Update()
 
 	for _, spell in ipairs(self.addedSpells) do
 		if spell.player.initialized then
-			self.style:OnSpellAdded(spell)
+			self.style:AddSpell(spell)
 		else
 			table.insert(spellsNotAdded, spell)
 		end
@@ -329,38 +340,6 @@ function RCT.FrameManager:Update()
 	self.style:Redraw()
 end
 
-function RCT.FrameManager:OnPlayerAdded(player)
-	if RCT:TableContains(self.addedPlayers, player) or RCT:TableContains(self.removedPlayers, player) then
-		return
-	end
-
-	table.insert(self.addedPlayers, player)
-end
-
-function RCT.FrameManager:OnPlayerRemoved(player)
-	if RCT:TableContains(self.addedPlayers, player) or RCT:TableContains(self.removedPlayers, player) then
-		return
-	end
-
-	table.insert(self.removedPlayers, player)
-end
-
-function RCT.FrameManager:OnSpellAdded(spell)
-	if RCT:TableContains(self.addedSpells, spell) or RCT:TableContains(self.removedSpells, spell) then
-		return
-	end
-
-	table.insert(self.addedSpells, spell)
-end
-
-function RCT.FrameManager:OnSpellRemoved(spell)
-	if RCT:TableContains(self.addedSpells, spell) or RCT:TableContains(self.removedSpells, spell) then
-		return
-	end
-
-	table.insert(self.removedSpells, spell)
-end
-
 function RCT.FrameManager:SetStyle(style)
 	if self.style ~= nil then
 		self.style:Destroy()
@@ -370,12 +349,32 @@ function RCT.FrameManager:SetStyle(style)
 	self.style = style()
 
 	for _, player in pairs(RCT.players) do
-		self.style:OnPlayerAdded(player)
+		self.style:AddPlayer(player)
 		
 		local spells = player:GetSpells()
 		for _, spell in spells do
-			self.style.OnSpellAdded(spell)
+			self.style.AddSpell(spell)
 		end
+	end
+end
+
+function RCT.FrameManager.EventHandler(self, evt, arg)
+	if RCT:TableContains(self.addedPlayers, arg) or RCT:TableContains(self.removedPlayers, arg) then
+		return
+	end
+
+	if RCT:TableContains(self.addedSpells, arg) or RCT:TableContains(self.removedSpells, arg) then
+		return
+	end
+
+	if evt == RCT.EVENT_PLAYER_ADDED then
+		table.insert(self.addedPlayers, arg)
+	elseif evt == RCT.EVENT_PLAYER_REMOVED then
+		table.insert(self.removedPlayers, arg)
+	elseif evt == RCT.EVENT_SPELL_ADDED then
+		table.insert(self.addedSpells, arg)
+	elseif evt == RCT.EVENT_SPELL_REMOVED then
+		table.insert(self.removedSpells, arg)
 	end
 end
 

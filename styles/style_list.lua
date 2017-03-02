@@ -23,18 +23,18 @@ function RCT.FrameStyleList:Redraw()
 	RCT.FrameStyleBase:Redraw()
 end
 
-function RCT.FrameStyleList:OnPlayerAdded(player)
-	RCT.FrameStyleBase:OnPlayerAdded()
+function RCT.FrameStyleList:AddPlayer(player)
+	RCT.FrameStyleBase:AddPlayer()
 end
 
-function RCT.FrameStyleList:OnPlayerRemoved(player)
-	RCT.FrameStyleBase:OnPlayerRemoved()
+function RCT.FrameStyleList:RemovePlayer(player)
+	RCT.FrameStyleBase:RemovePlayer()
 end
 
-function RCT.FrameStyleList:OnSpellAdded(spell)
-	RCT.FrameStyleBase:OnSpellAdded()
+function RCT.FrameStyleList:AddSpell(spell)
+	RCT.FrameStyleBase:AddSpell()
 end
 
-function RCT.FrameStyleList:OnSpellRemoved(spell)
-	RCT.FrameStyleBase:OnSpellRemoved()
+function RCT.FrameStyleList:RemoveSpell(spell)
+	RCT.FrameStyleBase:RemoveSpell()
 end

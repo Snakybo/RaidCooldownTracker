@@ -18,16 +18,16 @@ end
 function RCT.FrameStyleBase:Redraw()
 end
 
-function RCT.FrameStyleBase:OnPlayerAdded(player)
+function RCT.FrameStyleBase:AddPlayer(player)
 end
 
-function RCT.FrameStyleBase:OnPlayerRemoved(player)
+function RCT.FrameStyleBase:RemovePlayer(player)
 end
 
-function RCT.FrameStyleBase:OnSpellAdded(spell)
+function RCT.FrameStyleBase:AddSpell(spell)
 end
 
-function RCT.FrameStyleBase:OnSpellRemoved(spell)
+function RCT.FrameStyleBase:RemoveSpell(spell)
 end
 
 function RCT.FrameStyleBase:RestoreFrame(frame, parent)
