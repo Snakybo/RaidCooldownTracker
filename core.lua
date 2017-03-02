@@ -16,6 +16,7 @@ RCT.players = { }
 
 RCT.frameManager = nil
 RCT.database = nil
+RCT.options = nil
 
 --[[ Player class ]]--
 
@@ -494,6 +495,7 @@ function RCT:OnInitialize()
 	RCT:InitializeSpellInfos()
 
 	RCT.database = RCT.Database()
+	RCT.options = RCT.Options()
 
 	RCT.frameManager = RCT.FrameManager()
 	RCT.frameManager:SetStyle(RCT.FrameStyleCompactList)
@@ -589,10 +591,9 @@ function RCT:SlashProcessor(input)
 		table.insert(parts, part)
 	end
 
-	if parts[1] == "setvisible" then
-		RCT.database:SetSpellVisible(parts[2], tonumber(parts[3]), tonumber(parts[4]), tonumber(parts[5]))
-	elseif parts[1] == "setvisibleglobal" then
-		RCT.database:SetSpellVisibleGlobal(tonumber(parts[2]), tonumber(parts[3]))
+	if parts[1] == "config" then
+		InterfaceOptionsFrame_OpenToCategory("RaidCooldownTracker")
+    	InterfaceOptionsFrame_OpenToCategory("RaidCooldownTracker")
 	end
 end
 

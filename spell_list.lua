@@ -16,6 +16,21 @@ RCT.classes = {
 	DemonHunter	= "DEMONHUNTER"
 }
 
+RCT.classNames = {
+	[RCT.classes.Mage]			= "Mage",
+	[RCT.classes.Paladin]		= "Paladin",
+	[RCT.classes.Warrior]		= "Warrior",
+	[RCT.classes.Druid]			= "Druid",
+	[RCT.classes.DeathKnight]	= "Death Knight",
+	[RCT.classes.Hunter]		= "Hunter",
+	[RCT.classes.Priest]		= "Priest",
+	[RCT.classes.Rogue]			= "Rogue",
+	[RCT.classes.Shaman]		= "Shaman",
+	[RCT.classes.Warlock]		= "Warlock",
+	[RCT.classes.Monk]			= "Monk",
+	[RCT.classes.DemonHunter]	= "Demon Hunter"
+}
+
 RCT.specs = {
 	Mage		= { Arcane 			= 62,	Fire 		= 63, 	Frost		= 64 						},
 	Paladin		= { Holy 			= 65,	Protection	= 66,  	Retribution	= 70 						},
@@ -29,6 +44,45 @@ RCT.specs = {
     Warlock 	= {	Affliction 		= 265, 	Demonology	= 266, 	Destruction = 267						},
 	Monk		= { Brewmaster 		= 268,	Windwalker	= 269,	Mistweaver 	= 270						},
 	DemonHunter	= {	Havoc 			= 577, 	Vengeance	= 581											}
+}
+
+RCT.specNames = {
+	[RCT.specs.Mage.Arcane]				= "Arcane",
+	[RCT.specs.Mage.Fire]				= "Fire",
+	[RCT.specs.Mage.Frost]				= "Frost",
+	[RCT.specs.Paladin.Holy]			= "Holy",
+	[RCT.specs.Paladin.Protection]		= "Protection",
+	[RCT.specs.Paladin.Retribution]		= "Retribution",
+	[RCT.specs.Warrior.Arms]			= "Arms",
+	[RCT.specs.Warrior.Fury]			= "Fury",
+	[RCT.specs.Warrior.Protection]		= "Protection",
+	[RCT.specs.Druid.Balance]			= "Balance",
+	[RCT.specs.Druid.Feral]				= "Feral",
+	[RCT.specs.Druid.Guardian]			= "Guardian",
+	[RCT.specs.Druid.Restoration]		= "Restoration",
+	[RCT.specs.DeathKnight.Blood]		= "Blood",
+	[RCT.specs.DeathKnight.Frost]		= "Frost",
+	[RCT.specs.DeathKnight.Unholy]		= "Unholy",
+	[RCT.specs.Hunter.BeastMastery]		= "Beast Mastery",
+	[RCT.specs.Hunter.Marksman]			= "Marksman",
+	[RCT.specs.Hunter.Survival]			= "Survival",
+	[RCT.specs.Priest.Discipline]		= "Discipline",
+	[RCT.specs.Priest.Holy]				= "Holy",
+	[RCT.specs.Priest.Shadow]			= "Shadow",
+	[RCT.specs.Rogue.Assassination]		= "Assassination",
+	[RCT.specs.Rogue.Combat]			= "Combat",
+	[RCT.specs.Rogue.Subtlety]			= "Subtlety",
+	[RCT.specs.Shaman.Elemental]		= "Elemental",
+	[RCT.specs.Shaman.Enhancement]		= "Enhancement",
+	[RCT.specs.Shaman.Restoration]		= "Restoration",
+	[RCT.specs.Warlock.Affliction]		= "Affliction",
+	[RCT.specs.Warlock.Demonology]		= "Demonology",
+	[RCT.specs.Warlock.Destruction]		= "Destruction",
+	[RCT.specs.Monk.Brewmaster]			= "Brewmaster",
+	[RCT.specs.Monk.Windwalker]			= "Windwalker",
+	[RCT.specs.Monk.Mistweaver]			= "Mistweaver",
+	[RCT.specs.DemonHunter.Havoc]		= "Havoc",
+	[RCT.specs.DemonHunter.Vengeance]	= "Vengeance",
 }
 
 RCT.categories = {
