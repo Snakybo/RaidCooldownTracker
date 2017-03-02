@@ -110,7 +110,7 @@ function RCT.Player:Reload()
 
 	-- Remove uncastable and hidden spells
 	for spellId, _ in pairs(availableSpells) do
-		if self:CanCastSpell(spellId) and RCT.database:IsSpellVisible(self.class, self.spec, spellId) then
+		if self:CanCastSpell(spellId) and RCT:GetSpellProperties(self.class, self.spec, spellId).enabled == 1 then
 			table.insert(newSpells, spellId)
 		end
 	end
@@ -377,6 +377,8 @@ function RCT.FrameManager.EventHandler(self, evt, arg)
 	elseif evt == RCT.EVENT_SPELL_REMOVED then
 		table.insert(self.removedSpells, arg)
 	end
+
+	self:Update()
 end
 
 --[[ Database class ]]--
@@ -399,72 +401,12 @@ function RCT.Database:new()
 	self.db.RegisterCallback(self, "OnProfileReset", "Reload")
 end
 
-function RCT.Database:OnEnable()
-	for className, class in pairs(RCT.spellDB) do
-		for specName, spec in pairs(class) do
-			for spellId, spell in pairs(spec) do
-				local key = className .. "/" .. specName .. "/" .. spellId
-				local data = self.db.profile.spellProperties[key]
-				
-				RCT:InjectSpellProperty(className, specName, spellId, "visible", data["visible"])
-			end
-		end
-	end
-end
-
 function RCT.Database:Reload()
 	print("TODO: Database reload")
 end
 
-function RCT.Database:SetSpellVisible(class, spec, spellId, visible)
-	if self:IsSpellVisible(class, spec, spellId) == visible then
-		return
-	end
-
-	if visible ~= 0 and visible ~= 1 then
-		return
-	end
-
-	self:SetSpellProperty(class, spec, spellId, "visible", visible)
-
-	-- Start tracking the spell
-	if visible == 1 then
-		for _, player in pairs(RCT.players) do
-			player:AddSpell(spellId)
-		end
-	-- Stop tracking the spell
-	else
-		for _, player in pairs(RCT.players) do
-			player:RemoveSpell(spellId)
-		end
-	end
-end
-
-function RCT.Database:SetSpellVisibleGlobal(spellId, visible)
-	for className, class in pairs(RCT.spellDB) do
-		for specName, spec in pairs(class) do
-			for id, spell in pairs(spec) do
-				if id == spellId then
-					self:SetSpellVisible(className, specName, spellId, visible)
-				end
-			end
-		end
-	end
-end
-
-function RCT.Database:SetSpellProperty(class, spec, spellId, property, value)
-	local key = class .. "/" .. spec .. "/" .. spellId
-	local data = self.db.profile.spellProperties[key]
-
-	data[property] = value
-	RCT:InjectSpellProperty(class, spec, spellId, property, value)
-end
-
-function RCT.Database:GetSpellProperty(class, spec, spellId, property)
-	local key = class .. "/" .. spec .. "/" .. spellId
-	local data = self.db.profile.spellProperties[key]
-
-	return data[property]
+function RCT.Database:GetProfile()
+	return self.db.profile
 end
 
 function RCT.Database:GetDefaults()
@@ -476,7 +418,7 @@ function RCT.Database:GetDefaults()
 		profile = { 
 			spellProperties = {
 				['*'] = {
-					visible = 1
+					enabled = 1
 				}
 			}
 		}
@@ -485,16 +427,12 @@ function RCT.Database:GetDefaults()
 	return self.defaults
 end
 
-function RCT.Database:IsSpellVisible(class, spec, spellId)
-	return self:GetSpellProperty(class, spec, spellId, "visible") == 1
-end
-
 --[[ Initialization ]]--
 
 function RCT:OnInitialize()
+	RCT.database = RCT.Database()
 	RCT:InitializeSpellInfos()
 
-	RCT.database = RCT.Database()
 	RCT.options = RCT.Options()
 
 	RCT.frameManager = RCT.FrameManager()
@@ -502,8 +440,6 @@ function RCT:OnInitialize()
 end
 
 function RCT:OnEnable()
-	RCT.database:OnEnable()
-
 	LGIST.RegisterCallback(self, "GroupInSpecT_Update", "OnUnitUpdated")
 	LGIST.RegisterCallback(self, "GroupInSpecT_Remove", "OnUnitRemoved")
 
@@ -524,6 +460,7 @@ function RCT:InitializeSpellInfos()
 				RCT:InjectSpellProperty(className, specName, spellId, "spellId", spellId)
 				RCT:InjectSpellProperty(className, specName, spellId, "name", name)
 				RCT:InjectSpellProperty(className, specName, spellId, "icon", icon)
+				RCT:InjectSpellProperty(className, specName, spellId, "enabled", RCT:GetSpellProperties(className, specName, spellId).enabled)
 			end
 		end
 	end
@@ -609,6 +546,15 @@ function RCT:InjectSpellProperty(class, spec, spellId, key, value)
 	if spell ~= nil then
 		spell[key] = value
 	end
+end
+
+function RCT:SpellToDatabaseKey(class, spec, spellId)
+	return class .. "/" .. spec .. "/" .. spellId
+end
+
+function RCT:GetSpellProperties(class, spec, spellId)
+	local key = RCT:SpellToDatabaseKey(class, spec, spellId)
+	return RCT.database:GetProfile().spellProperties[key]
 end
 
 function RCT:GetPlayerByGUID(guid)

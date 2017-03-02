@@ -93,6 +93,7 @@ function RCT.Options:BuildSpellsPanel()
 
 		return {
 			name = spellInfo.name,
+			desc = GetSpellDescription(spellId),
 			type = "group",
 			args = {
 				header = {
@@ -106,11 +107,20 @@ function RCT.Options:BuildSpellsPanel()
 					type = "toggle",
 					order = 2,
 					set = function(info, value)
-						-- TODO
+						RCT:GetSpellProperties(class, spec, spellId).enabled = value and 1 or 0
+
+						if value then
+							for _, player in pairs(RCT.players) do
+								player:AddSpell(spellId)
+							end
+						else
+							for _, player in pairs(RCT.players) do
+								player:RemoveSpell(spellId)
+							end
+						end
 					end,
 					get = function()
-						-- TODO
-						return true
+						return RCT:GetSpellProperties(class, spec, spellId).enabled == 1 and true or false
 					end
 				}
 			}
