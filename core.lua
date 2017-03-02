@@ -415,7 +415,13 @@ function RCT.Database:GetDefaults()
 	end
 
 	self.defaults = {
-		profile = { 
+		profile = {
+			window = {
+				x = 0,
+				y = 0,
+				w = 200,
+				anchor = "CENTER"
+			},
 			spellProperties = {
 				['*'] = {
 					enabled = 1
@@ -555,6 +561,10 @@ end
 function RCT:GetSpellProperties(class, spec, spellId)
 	local key = RCT:SpellToDatabaseKey(class, spec, spellId)
 	return RCT.database:GetProfile().spellProperties[key]
+end
+
+function RCT:GetWindowProperties()
+	return RCT.database:GetProfile().window
 end
 
 function RCT:GetPlayerByGUID(guid)

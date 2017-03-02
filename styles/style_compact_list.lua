@@ -19,10 +19,41 @@ function RCT.FrameStyleCompactList:new()
 	self.unusedFrames = { }
 	self.numFrames = 0
 
+	local config = RCT:GetWindowProperties()
+
 	self.frame = CreateFrame("Frame", "RCT_CompactListFrame", UIParent)
-	self.frame:SetPoint("CENTER", 400, 0) -- Temp
-	self.frame:SetWidth(200)
+	self.frame:SetPoint(config.anchor, config.x, config.y)
+	self.frame:SetWidth(config.w)
 	self.frame:SetHeight(20)
+	
+	self.frame:SetMovable(true)
+	self.frame:EnableMouse(true)
+	self.frame:SetScript("OnMouseDown", function(self, button)
+		if button == "LeftButton" and not self.isMoving then
+			self:StartMoving()
+			self.isMoving = true
+		end
+	end)
+	self.frame:SetScript("OnMouseUp", function(self, button)
+		if button == "LeftButton" and self.isMoving then
+			self:StopMovingOrSizing()
+			self.isMoving = false
+
+			local x, y = self:GetRect()
+			RCT:GetWindowProperties().x = x
+			RCT:GetWindowProperties().x = y
+		end
+	end)
+	self.frame:SetScript("OnHide", function(self)
+		if self.isMoving then
+			self:StopMovingOrSizing()
+			self.isMoving = false
+
+			local x, y = self:GetRect()
+			RCT:GetWindowProperties().x = x
+			RCT:GetWindowProperties().x = y
+		end
+	end)
 end
 
 function RCT.FrameStyleCompactList:Destroy()
