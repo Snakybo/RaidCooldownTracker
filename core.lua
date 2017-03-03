@@ -11,6 +11,7 @@ RCT.EVENT_PLAYER_ADDED = "PLAYER_ADDED"
 RCT.EVENT_PLAYER_REMOVED = "PLAYER_REMOVED"
 RCT.EVENT_SPELL_ADDED = "SPELL_ADDDED"
 RCT.EVENT_SPELL_REMOVED = "SPELL_REMOVED"
+RCT.EVENT_SPELL_DATABASE_UPDATED = "SPELL_DB_UPDATED"
 
 RCT.players = { }
 
@@ -43,6 +44,9 @@ function RCT.Player:new(guid, info)
 	self.spells = { }
 
 	RCT.players[guid] = self
+
+	RCT:RegisterMessage(RCT.EVENT_SPELL_DATABASE_UPDATED, self.OnSpellDatabaseUpdated, self)
+
 	RCT:SendMessage(RCT.EVENT_PLAYER_ADDED, self)
 end
 
@@ -199,6 +203,12 @@ function RCT.Player:GetSpellById(spellId)
 	end
 
 	return nil
+end
+
+function RCT.Player.OnSpellDatabaseUpdated(self, evt, class, spec)
+	if class == self.class and spec == self.spec then
+		self:Reload()
+	end
 end
 
 --[[ Spell class ]]--

@@ -167,16 +167,7 @@ function RCT.Options:BuildSpellsPanel()
 					order = 2,
 					set = function(info, value)
 						RCT:GetSpellProperties(class, spec, spellId).enabled = value and 1 or 0
-
-						if value then
-							for _, player in pairs(RCT.players) do
-								player:AddSpell(spellId)
-							end
-						else
-							for _, player in pairs(RCT.players) do
-								player:RemoveSpell(spellId)
-							end
-						end
+						RCT:SendMessage(RCT.EVENT_SPELL_DATABASE_UPDATED, class, spec, spellId)
 					end,
 					get = function()
 						return RCT:GetSpellProperties(class, spec, spellId).enabled == 1 and true or false
