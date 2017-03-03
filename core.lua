@@ -486,7 +486,7 @@ end
 --[[ LibGroupInSpecT callbacks ]]--
 
 function RCT:OnUnitUpdated(evt, guid, unitId, info)
-	if unitId == "player" and RCT.database:GetProfile().hideSelf then
+	if unitId == "player" and RCT.database:GetProfile().displaySelf == 0 then
 		return
 	end
 
