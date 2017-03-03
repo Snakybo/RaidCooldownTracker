@@ -7,6 +7,7 @@ local AceConfig = LibStub("AceConfig-3.0")
 local AceConfigDialog = LibStub("AceConfigDialog-3.0")
 local AceConfigRegistry = LibStub("AceConfigRegistry-3.0")
 local AceDBOptions = LibStub("AceDBOptions-3.0")
+local LGIST = LibStub("LibGroupInSpecT-1.1")
 
 --[[ Options class ]]--
 
@@ -140,6 +141,29 @@ function RCT.Options:BuildGeneralPanel()
 				end,
 				get = function()
 					return "none"
+				end
+			},
+			displaySelf = {
+				type = "toggle",
+				order = 3,
+				name = "Display Player",
+				desc = "Whether or not to display cooldowns for yourself",
+				set = function(info, value)
+					RCT.database:GetProfile().displaySelf = value and 1 or 0
+					
+					local guid = UnitGUID("player")
+
+					if not value then
+						local player = RCT:GetPlayerByGUID(guid)
+						if player ~= nil then player:Destroy() end
+					else
+						local info = LGIST:GetCachedInfo(guid)
+						local player = RCT.Player(guid, info)
+						player:Update(info)
+					end
+				end,
+				get = function()
+					return RCT.database:GetProfile().displaySelf == 1 and true or false
 				end
 			}
 		}

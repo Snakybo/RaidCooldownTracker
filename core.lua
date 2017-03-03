@@ -426,6 +426,7 @@ function RCT.Database:GetDefaults()
 
 	self.defaults = {
 		profile = {
+			displaySelf = 1,
 			window = {
 				x = 0,
 				y = 0,
@@ -485,6 +486,10 @@ end
 --[[ LibGroupInSpecT callbacks ]]--
 
 function RCT:OnUnitUpdated(evt, guid, unitId, info)
+	if unitId == "player" and RCT.database:GetProfile().hideSelf then
+		return
+	end
+
 	local player = RCT:GetPlayerByGUID(guid)
 
 	if player == nil then
