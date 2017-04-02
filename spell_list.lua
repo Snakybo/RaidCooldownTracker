@@ -88,8 +88,7 @@ RCT.specNames = {
 RCT.categories = {
 	Healing		= 1,
 	Utility		= 2,
-	BRez		= 4,
-	Defensive	= 8,
+	Defensive	= 4,
 }
 
 RCT.spellDB = {
