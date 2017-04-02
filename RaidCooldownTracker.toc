@@ -12,6 +12,4 @@ core.lua
 options.lua
 
 styles\style_base.lua
-styles\style_list.lua
 styles\style_compact_list.lua
-styles\style_categorized_list.lua
