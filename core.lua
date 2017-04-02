@@ -412,7 +412,9 @@ function RCT.Database:new()
 end
 
 function RCT.Database:Reload()
-	print("TODO: Database reload")
+	for _, player in pairs(RCT.players) do
+		player:Reload()
+	end
 end
 
 function RCT.Database:GetProfile()
