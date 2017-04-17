@@ -7,11 +7,19 @@ local LGIST = LibStub("LibGroupInSpecT-1.1")
 local AceDB = LibStub("AceDB-3.0")
 
 -- Events
-RCT.EVENT_PLAYER_ADDED = "PLAYER_ADDED"
-RCT.EVENT_PLAYER_REMOVED = "PLAYER_REMOVED"
-RCT.EVENT_SPELL_ADDED = "SPELL_ADDDED"
-RCT.EVENT_SPELL_REMOVED = "SPELL_REMOVED"
-RCT.EVENT_SPELL_DATABASE_UPDATED = "SPELL_DB_UPDATED"
+RCT.EVENT_PLAYER_ADDED				= "PLAYER_ADDED"
+RCT.EVENT_PLAYER_REMOVED 			= "PLAYER_REMOVED"
+
+RCT.EVENT_PLAYER_VISIBLE 			= "PLAYER_VISIBLE"
+RCT.EVENT_PLAYER_HIDDEN				= "PLAYER_HIDDEN"
+
+RCT.EVENT_SPELL_ADDED 				= "SPELL_ADDDED"
+RCT.EVENT_SPELL_REMOVED 			= "SPELL_REMOVED"
+
+RCT.EVENT_SPELL_HIDDEN 				= "SPELL_HIDDEN"
+RCT.EVENT_SPELL_VISIBLE 			= "SPELL_VISIBLE"
+
+RCT.EVENT_SPELL_DATABASE_UPDATED	= "SPELL_DB_UPDATED"
 
 RCT.players = { }
 
@@ -42,21 +50,50 @@ function RCT.Player:new(guid, info)
 	self.initialized = false
 	self.talents = RCT:ConstructTalentTable(info.talents)
 	self.spells = { }
+	self.visible = false
 
 	RCT.players[guid] = self
 
 	RCT:RegisterMessage(RCT.EVENT_SPELL_DATABASE_UPDATED, self.OnSpellDatabaseUpdated, self)
 
 	RCT:SendMessage(RCT.EVENT_PLAYER_ADDED, self)
+	
+	self:Show()
 end
 
 function RCT.Player:Destroy()
+	self:Hide()
+
 	for _, spell in pairs(self.spells) do
 		spell:Destroy()
 	end
 
 	RCT.players[self.guid] = nil
 	RCT:SendMessage(RCT.EVENT_PLAYER_REMOVED, self)
+end
+
+function RCT.Player:Hide()
+	if self.visible then
+		RCT:SendMessage(EVENT_PLAYER_HIDDEN, self)
+
+		for _, spell in pairs(self.spells) do
+			spell:Hide()
+		end
+
+		self.visible = false
+	end
+end
+
+function RCT.Player:Show()
+	if not self.visible then
+		RCT:SendMessage(EVENT_PLAYER_VISIBLE, self)
+
+		for _, spell in pairs(self.spells) do
+			spell:Show()
+		end
+
+		self.visible = true
+	end
 end
 
 function RCT.Player:Update(info)
@@ -231,12 +268,29 @@ function RCT.Spell:new(player, spellId)
 	self.lastCastTimestamp = 0
 	self.cooldownEndTimestamp = 0
 	self.activeEndTimestamp = 0
+	self.visible = false
 
 	RCT:SendMessage(RCT.EVENT_SPELL_ADDED, self)
+	self:Show()
 end
 
 function RCT.Spell:Destroy()
+	self:Hide()
 	RCT:SendMessage(RCT.EVENT_SPELL_REMOVED, self)
+end
+
+function RCT.Spell:Hide()
+	if self.visible then
+		RCT:SendMessage(RCT.EVENT_SPELL_HIDDEN, self)
+		self.visible = false
+	end
+end
+
+function RCT.Spell:Show()
+	if not self.visible then
+		RCT:SendMessage(RCT.EVENT_SPELL_VISIBLE, self)
+		self.visible = true
+	end
 end
 
 function RCT.Spell:Reset()
@@ -303,8 +357,8 @@ function RCT.FrameManager:new()
 
 	RCT:RegisterMessage(RCT.EVENT_PLAYER_ADDED, self.EventHandler, self)
 	RCT:RegisterMessage(RCT.EVENT_PLAYER_REMOVED, self.EventHandler, self)
-	RCT:RegisterMessage(RCT.EVENT_SPELL_ADDED, self.EventHandler, self)
-	RCT:RegisterMessage(RCT.EVENT_SPELL_REMOVED, self.EventHandler, self)
+	RCT:RegisterMessage(RCT.EVENT_SPELL_VISIBLE, self.EventHandler, self)
+	RCT:RegisterMessage(RCT.EVENT_SPELL_HIDDEN, self.EventHandler, self)
 end
 
 function RCT.FrameManager:Update()
@@ -382,9 +436,9 @@ function RCT.FrameManager.EventHandler(self, evt, arg)
 		table.insert(self.addedPlayers, arg)
 	elseif evt == RCT.EVENT_PLAYER_REMOVED then
 		table.insert(self.removedPlayers, arg)
-	elseif evt == RCT.EVENT_SPELL_ADDED then
+	elseif evt == RCT.EVENT_SPELL_VISIBLE then
 		table.insert(self.addedSpells, arg)
-	elseif evt == RCT.EVENT_SPELL_REMOVED then
+	elseif evt == RCT.EVENT_SPELL_HIDDEN then
 		table.insert(self.removedSpells, arg)
 	end
 
