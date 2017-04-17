@@ -10,6 +10,5 @@ init.lua
 spell_list.lua
 core.lua
 options.lua
-
-styles\style_base.lua
-styles\style_compact_list.lua
+style_base.lua
+style_compact_list.lua
