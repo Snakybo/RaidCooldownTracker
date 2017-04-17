@@ -53,96 +53,96 @@ function RCT.Options:BuildGeneralPanel()
 		type = "group",
 		order = 1,
 		args = {
-			window = {
-				name = "Window",
-				type = "group",
-				order = 1,
-				inline = true,
-				args = {
-					anchor = {
-						name = "Anchor",
-						type = "select",
-						order = 1,
-						values = {
-							["TOPLEFT"] = "Top Left",
-							["TOP"] = "Top",
-							["TOPRIGHT"] = "Top Right",
-							["LEFT"] = "Left",
-							["CENTER"] = "Center",
-							["RIGHT"] = "Right",
-							["BOTTOMLEFT"] = "Bottom left",
-							["BOTTOM"] = "Bottom",
-							["BOTTOMRIGHT"] = "Bottom Right"
-						},
-						set = function(info, value)
-							RCT:GetWindowProperties().anchor = value
-							-- TODO: Redraw
-						end,
-						get = function()
-							return RCT:GetWindowProperties().anchor
-						end
-					},
-					x = {
-						name = "X Position",
-						type = "range",
-						order = 2,
-						min = 0,
-						max = UIParent:GetWidth(),
-						set = function(info, value)
-							RCT:GetWindowProperties().x = value
-							-- TODO: Redraw
-						end,
-						get = function()
-							return RCT:GetWindowProperties().x
-						end
-					},
-					y = {
-						name = "Y Position",
-						type = "range",
-						order = 3,
-						min = 0,
-						max = UIParent:GetHeight(),
-						set = function(info, value)
-							RCT:GetWindowProperties().y = value
-							-- TODO: Redraw
-						end,
-						get = function()
-							return RCT:GetWindowProperties().y
-						end
-					},
-					w = {
-						name = "Width",
-						type = "range",
-						order = 4,
-						min = 0,
-						max = 500,
-						set = function(info, value)
-							RCT:GetWindowProperties().w = value
-							-- TODO: Redraw
-						end,
-						get = function()
-							return RCT:GetWindowProperties().w
-						end
-					}
-				}
-			},
-			visibility = {
-				type = "select",
-				order = 2,
-				name = "Visibility",
-				desc = "When to show the frame (only in raids, in both raids and parties or always)",
-				values = {
-					["none"] = "Always",
-					["party"] = "Party/Raid",
-					["raid"] = "Raid"
-				},
-				set = function(info, value)
-					-- TODO
-				end,
-				get = function()
-					return "none"
-				end
-			},
+			-- window = {
+			-- 	name = "Window",
+			-- 	type = "group",
+			-- 	order = 1,
+			-- 	inline = true,
+			-- 	args = {
+			-- 		anchor = {
+			-- 			name = "Anchor",
+			-- 			type = "select",
+			-- 			order = 1,
+			-- 			values = {
+			-- 				["TOPLEFT"] = "Top Left",
+			-- 				["TOP"] = "Top",
+			-- 				["TOPRIGHT"] = "Top Right",
+			-- 				["LEFT"] = "Left",
+			-- 				["CENTER"] = "Center",
+			-- 				["RIGHT"] = "Right",
+			-- 				["BOTTOMLEFT"] = "Bottom left",
+			-- 				["BOTTOM"] = "Bottom",
+			-- 				["BOTTOMRIGHT"] = "Bottom Right"
+			-- 			},
+			-- 			set = function(info, value)
+			-- 				RCT:GetWindowProperties().anchor = value
+			-- 				-- TODO: Redraw
+			-- 			end,
+			-- 			get = function()
+			-- 				return RCT:GetWindowProperties().anchor
+			-- 			end
+			-- 		},
+			-- 		x = {
+			-- 			name = "X Position",
+			-- 			type = "range",
+			-- 			order = 2,
+			-- 			min = 0,
+			-- 			max = UIParent:GetWidth(),
+			-- 			set = function(info, value)
+			-- 				RCT:GetWindowProperties().x = value
+			-- 				-- TODO: Redraw
+			-- 			end,
+			-- 			get = function()
+			-- 				return RCT:GetWindowProperties().x
+			-- 			end
+			-- 		},
+			-- 		y = {
+			-- 			name = "Y Position",
+			-- 			type = "range",
+			-- 			order = 3,
+			-- 			min = 0,
+			-- 			max = UIParent:GetHeight(),
+			-- 			set = function(info, value)
+			-- 				RCT:GetWindowProperties().y = value
+			-- 				-- TODO: Redraw
+			-- 			end,
+			-- 			get = function()
+			-- 				return RCT:GetWindowProperties().y
+			-- 			end
+			-- 		},
+			-- 		w = {
+			-- 			name = "Width",
+			-- 			type = "range",
+			-- 			order = 4,
+			-- 			min = 0,
+			-- 			max = 500,
+			-- 			set = function(info, value)
+			-- 				RCT:GetWindowProperties().w = value
+			-- 				-- TODO: Redraw
+			-- 			end,
+			-- 			get = function()
+			-- 				return RCT:GetWindowProperties().w
+			-- 			end
+			-- 		}
+			-- 	}
+			-- -- },
+			-- visibility = {
+			-- 	type = "select",
+			-- 	order = 2,
+			-- 	name = "Visibility",
+			-- 	desc = "When to show the frame (only in raids, in both raids and parties or always)",
+			-- 	values = {
+			-- 		["none"] = "Always",
+			-- 		["party"] = "Party/Raid",
+			-- 		["raid"] = "Raid"
+			-- 	},
+			-- 	set = function(info, value)
+			-- 		-- TODO
+			-- 	end,
+			-- 	get = function()
+			-- 		return "none"
+			-- 	end
+			-- },
 			displaySelf = {
 				type = "toggle",
 				order = 3,
