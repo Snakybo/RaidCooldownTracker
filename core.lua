@@ -518,6 +518,9 @@ function RCT:OnEnable()
 
 	RCT:RegisterEvent("ENCOUNTER_END")
 	RCT:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
+	RCT:RegisterEvent("PLAYER_DEAD")
+	RCT:RegisterEvent("PLAYER_UNGHOST")
+	RCT:RegisterEvent("PLAYER_ALIVE")
 
 	RCT:RegisterChatCommand("RCT", "SlashProcessor")
 
@@ -546,10 +549,18 @@ function RCT:OnUnitUpdated(evt, guid, unitId, info)
 		return
 	end
 
+	if not UnitIsPlayer(unitId) then
+		return
+	end
+
 	local player = RCT:GetPlayerByGUID(guid)
 
 	if player == nil then
 		player = RCT.Player(guid, info)
+	end
+
+	if UnitIsDeadOrGhost(unitId) then
+		player:Hide()
 	end
 
 	player:Update(info)
@@ -595,6 +606,33 @@ function RCT:COMBAT_LOG_EVENT_UNFILTERED(evt, ...)
 				end
 			end
 		end
+	end
+end
+
+function RCT:PLAYER_DEAD()
+	local guid = UnitGUID("player")
+	local player = RCT:GetPlayerByGUID(guid)
+
+	if player ~= nil then
+		player:Hide()
+	end
+end
+
+function RCT:PLAYER_UNGHOST()
+	local guid = UnitGUID("player")
+	local player = RCT:GetPlayerByGUID(guid)
+
+	if player ~= nil then
+		player:Show()
+	end
+end
+
+function RCT:PLAYER_ALIVE()
+	local guid = UnitGUID("player")
+	local player = RCT:GetPlayerByGUID(guid)
+
+	if player ~= nil and not UnitIsDeadOrGhost("player") then
+		player:Show()
 	end
 end
 
